@@ -1,6 +1,6 @@
 package com.jbeeb.device;
 
-import com.jbeeb.InterruptSource;
+import com.jbeeb.util.InterruptSource;
 
 import java.awt.*;
 

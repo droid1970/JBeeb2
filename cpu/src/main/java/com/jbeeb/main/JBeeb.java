@@ -1,6 +1,5 @@
 package com.jbeeb.main;
 
-import com.jbeeb.Machine;
 import com.jbeeb.SheilaMemoryMappedDevice;
 import com.jbeeb.cpu.Cpu;
 import com.jbeeb.device.*;

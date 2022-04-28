@@ -1,4 +1,4 @@
-package com.jbeeb;
+package com.jbeeb.util;
 
 public interface InterruptSource {
     String getName();

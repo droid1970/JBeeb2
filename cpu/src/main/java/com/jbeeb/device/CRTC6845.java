@@ -1,8 +1,7 @@
 package com.jbeeb.device;
 
-import com.jbeeb.InterruptSource;
+import com.jbeeb.util.InterruptSource;
 import com.jbeeb.util.ClockListener;
-import com.jbeeb.util.Util;
 
 import java.util.ArrayList;
 import java.util.List;

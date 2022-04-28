@@ -1,7 +1,7 @@
-package com.jbeeb;
+package com.jbeeb.main;
 
+import com.jbeeb.util.InterruptSource;
 import com.jbeeb.util.Runner;
-import com.jbeeb.util.Util;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +35,6 @@ public final class Machine implements InterruptSource {
         for (InterruptSource s : interruptSources) {
             if (s.isIRQ()) {
                 s.isIRQ();
-                //Util.log(" irq source " + s.getClass().getSimpleName(), 0);
                 return true;
             }
         }

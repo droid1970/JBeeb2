@@ -1,7 +1,7 @@
 package com.jbeeb.cpu;
 
 import com.jbeeb.device.Device;
-import com.jbeeb.InterruptSource;
+import com.jbeeb.util.InterruptSource;
 import com.jbeeb.assembler.Disassembler;
 import com.jbeeb.memory.Memory;
 import com.jbeeb.util.ClockListener;
@@ -147,7 +147,6 @@ public final class Cpu implements Device, ClockListener, Runnable {
     }
 
     private void callInterruptHandler(final boolean setBreakFlag, final boolean clearServicingInterrupt) {
-        //System.err.println("irq");
         pushByte(getPCH()); // not queued
         queue(() -> pushByte(getPCL()));
         queue(() -> {
@@ -178,17 +177,9 @@ public final class Cpu implements Device, ClockListener, Runnable {
                     return;
                 }
             }
-//            if (pc == 0xdd09) {
-//                System.err.println("A = " + Util.pad0(Integer.toBinaryString(getA()), 8));
-//                if ((a & 2) != 0) {
-//                    int x = 1;
-//                }
-//            }
+
             fetch();
             cycleCount.incrementAndGet();
-//            if (verboseSupplier.getAsBoolean()) {
-//                System.out.println(Util.formatHexWord(pcDis) + " : " + this);
-//            }
         } else {
             instructionDis = "";
             queue.remove().run();
@@ -212,9 +203,6 @@ public final class Cpu implements Device, ClockListener, Runnable {
     }
 
     private void fetch() {
-//        if (verboseSupplier.getAsBoolean()) {
-//            instructionDis = disassembler.disassemble(pc);
-//        }
         final int opcode = readFromAndIncrementPC();
         final InstructionKey key = instructionSet.decode(opcode);
         this.instruction = key.getInstruction();
@@ -374,6 +362,7 @@ public final class Cpu implements Device, ClockListener, Runnable {
     private void nop() {
         // Do nothing
     }
+
     private void readEffectiveAddressIndirectX() {
         queue(() -> lo = readFromAndIncrementPC());
         queue(() -> {

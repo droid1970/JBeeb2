@@ -1,4 +1,4 @@
-package com.jbeeb;
+package com.jbeeb.util;
 
 public interface Interruptible {
     default void setNMI(final boolean nmi) {
