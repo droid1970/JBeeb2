@@ -12,6 +12,7 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
 
     private final Screen screen;
 
+    private long cyclesSinceSync = 0L;
     private long ticksSinceSync = 0L;
     private int scanLine;
     private Rectangle cursorRect;
@@ -27,6 +28,7 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
     private int verticalTotal;
     private int verticalDisplayed;
     private int verticalAdjust;
+    private boolean fastClock;
 
     public GraphicsModeScreenRenderer(Screen screen, Memory memory, SystemVIA systemVIA, CRTC6845 crtc6845, VideoULA videoULA) {
         super(memory, systemVIA, crtc6845, videoULA);
@@ -41,7 +43,9 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
         cursorOn = crtc6845.isCursorOn();
         baseAddress = mode.getMemoryLocation();
         charsPerLine = mode.getPhysicalCharsPerLine();
+        fastClock = videoULA.isFastClockRate();
 
+        cyclesSinceSync = 0L;
         ticksSinceSync = 0L;
         charPos = 0;
         scanLine = 0;
@@ -62,12 +66,17 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
 
     @Override
     public void tick(DisplayMode mode, BufferedImage image) {
-        try {
-            paintNextCharacter(mode, image);
-        } catch (Exception ex) {
-            // Deliberately ignored
+        if (fastClock || ((cyclesSinceSync & 1) == 0)) {
+            if ((ticksSinceSync % horizontalTotal) < horizontalDisplayed) {
+                try {
+                    paintNextCharacter(mode, image);
+                } catch (Exception ex) {
+                    // Deliberately ignored
+                }
+            }
+            ticksSinceSync++;
         }
-        ticksSinceSync++;
+        cyclesSinceSync++;
     }
 
     private void setTimings(
@@ -98,6 +107,7 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
             this.verticalAdjust = verticalAdjust;
             changed = true;
         }
+
         if (changed) {
             System.err.println("hdisp = " + horizontalDisplayed + " vdisp = " + verticalDisplayed);
             System.err.println("htotal = " + horizontalTotal + " vtotal = " + verticalTotal + " vedj = " + verticalAdjust);
