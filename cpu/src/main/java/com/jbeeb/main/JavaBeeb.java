@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public final class JBeeb {
+public final class JavaBeeb {
 
     private static final File OS_ROM_FILE = new File(System.getProperty("user.home"), "OS-1.2.rom");
     private static final File BASIC_ROM_FILE = new File(System.getProperty("user.home"), "BASIC2.rom");

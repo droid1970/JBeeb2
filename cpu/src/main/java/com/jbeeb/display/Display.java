@@ -27,21 +27,23 @@ import java.util.function.IntConsumer;
 
 public final class Display {
 
+    private static final boolean VERBOSE = false;
+
+    private static final int IMAGE_BORDER_SIZE = 16;
+
     private final VideoULA videoULA;
     private final CRTC6845 crtc6845;
     private final SystemVIA systemVIA;
     private List<IntConsumer> keyUpListeners = new ArrayList<>();
     private List<BiConsumer<Integer, Boolean>> keyDownListeners = new ArrayList<>();
-    private IntConsumer keyUpListener;
-
-    private long cycle = 0L;
-
-    private final BufferedImage image = new BufferedImage(640, 512, BufferedImage.TYPE_INT_RGB);
 
     private final DisplayRenderer graphicsRenderer;
     private final TeletextDisplayRenderer teletextRenderer;
 
-    private ImageComponent imageComponent;
+    private final BufferedImage image = new BufferedImage(640, 512, BufferedImage.TYPE_INT_RGB);
+    private long cycle = 0L;
+
+    private final ImageComponent imageComponent;
 
     public Display(final Memory memory, final VideoULA videoULA, final CRTC6845 crtc6845, final SystemVIA systemVIA) {
         this.videoULA = Objects.requireNonNull(videoULA);
@@ -52,6 +54,7 @@ public final class Display {
         SwingUtilities.invokeLater(() -> {
             createAndShowUI();
         });
+        this.imageComponent = new ImageComponent();
     }
 
     public void addKeyUpListener(IntConsumer l) {
@@ -67,8 +70,7 @@ public final class Display {
     }
 
     private void createAndShowUI() {
-        this.imageComponent = new ImageComponent();
-        final JFrame frame = new JFrame("JBeeb");
+        final JFrame frame = new JFrame("JavaBeeb");
         ((JComponent) frame.getContentPane()).setBorder(new EmptyBorder(8, 8, 8, 8));
         frame.getContentPane().setBackground(new Color(32, 32, 32));
         frame.getContentPane().add(BorderLayout.CENTER, imageComponent);
@@ -78,8 +80,6 @@ public final class Display {
         frame.setLocationRelativeTo(null);
         SwingUtilities.invokeLater(() -> imageComponent.requestFocus());
     }
-
-    private static final int IMAGE_BORDER_SIZE = 16;
 
     private final class ImageComponent extends JComponent {
         public ImageComponent() {
@@ -140,11 +140,10 @@ public final class Display {
                     g.setColor(Color.GRAY);
                     g.drawRect(px - IMAGE_BORDER_SIZE, py - IMAGE_BORDER_SIZE, pw + IMAGE_BORDER_SIZE * 2 - 1, ph + IMAGE_BORDER_SIZE * 2 - 1);
                 }
-                //((Graphics2D) g).setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
                 g.drawImage(image, px, py, pw, ph, null);
             }
 
-            if ((cycle % 100) == 0) {
+            if (VERBOSE && (cycle % 100) == 0) {
                 System.err.println("Updated display in " + Util.formatDurationNanosAsMillis(System.nanoTime() - startTime) + "ms");
             }
             cycle++;
