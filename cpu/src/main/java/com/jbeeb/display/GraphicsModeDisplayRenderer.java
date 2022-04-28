@@ -10,16 +10,110 @@ import java.awt.image.BufferedImage;
 
 public class GraphicsModeDisplayRenderer extends AbstractDisplayRenderer {
 
-    public GraphicsModeDisplayRenderer(Memory memory, SystemVIA systemVIA, CRTC6845 crtc6845, VideoULA videoULA) {
+    private final Display display;
+
+    private long cyclesSinceVSync = 0L;
+    private int scanLine;
+    private Rectangle cursorRect;
+
+    public GraphicsModeDisplayRenderer(Display display, Memory memory, SystemVIA systemVIA, CRTC6845 crtc6845, VideoULA videoULA) {
         super(memory, systemVIA, crtc6845, videoULA);
+        this.display = display;
+    }
+
+    @Override
+    public boolean isClockBased() {
+        return true;
+    }
+
+    @Override
+    public void tick(DisplayMode mode, BufferedImage image) {
+        try {
+            paintNextScanline(mode, image);
+        } catch (Exception ex) {}
+    }
+
+    @Override
+    public void vsync() {
+        cyclesSinceVSync = 0L;
+        scanLine = 0;
+        cursorRect = null;
+    }@Override
+    public boolean isImageReady() {
+        return scanLine > 255;
+    }
+    @Override
+    public Rectangle getCursorRect() {
+        return cursorRect;
+    }
+
+    public boolean paintNextScanline(final DisplayMode mode, final BufferedImage img) {
+        if (scanLine > 255) {
+            return false;
+        }
+        if (scanLine == 0) {
+            cursorRect = null;
+        }
+
+        final int startAddressUnadjusted  = crtc6845.getScreenStartAddress();
+        final int startAddress = startAddressUnadjusted * 8;
+        final int cursorAddressUnadjusted = crtc6845.getCursorAddress();
+        final int cursorAddress = cursorAddressUnadjusted * 8;
+        if (cursorAddress < startAddress) {
+            int x = 1;
+        }
+        final boolean cursorOn = crtc6845.isCursorOn();
+
+        final int baseAddress = mode.getMemoryLocation();
+        final int charsPerLine = mode.getPhysicalCharsPerLine();
+        final int pw = img.getWidth() / mode.getWidth();
+        final int ph = img.getHeight() / mode.getHeight();
+        final int pixelsPerByte = 8 / mode.getBitsPerPixel();
+        final int byteWidth = img.getWidth() / mode.getPhysicalCharsPerLine();
+        final int scanLineAddress = startAddress + ((scanLine >>> 3) * charsPerLine * 8) + (scanLine & 0x7);
+        for (int col = 0; col < charsPerLine; col++) {
+            final int address = wrapAddress(baseAddress, scanLineAddress + (col << 3));
+            final int v = memory.readByte(address);
+            final int x = col * byteWidth;
+            int px = x;
+            for (int b = 0; b < pixelsPerByte; b++) {
+                final int rgb = videoULA.getPhysicalColor(mode.getLogicalColour(v, b), mode.getBitsPerPixel()).getRGB() & 0xFFFFFF;
+                fillRect(img, rgb, px, scanLine * ph, pw, ph);
+                px += pw;
+            }
+
+            if (cursorOn && cursorRect == null && address == cursorAddress) {
+                cursorRect = new Rectangle(x, (scanLine & 0xf8) * ph, byteWidth * mode.getBitsPerPixel(), ph * 8);
+            }
+        }
+        scanLine++;
+        if (scanLine > 255) {
+            if (cursorRect != null) {
+                fillRect(img, Color.WHITE.getRGB(), cursorRect.x, cursorRect.y + cursorRect.height - ph , cursorRect.width, ph);
+                cursorRect = null;
+            }
+            display.imageReady();
+        }
+        return (scanLine < 256);
+    }
+
+    private static int wrapAddress(final int baseAddress, int address) {
+        if (address >= 0x8000) {
+            address -= (0x8000 - baseAddress);
+        }
+        return address;
     }
 
     @Override
     public void refreshImage(final DisplayMode mode, final BufferedImage img) {
+        if (isClockBased()) {
+            throw new UnsupportedOperationException();
+        }
+
         final Graphics2D g = img.createGraphics();
 
         final int startAddressUnadjusted  = crtc6845.getScreenStartAddress();
-        final int cursorAddressUnadjusted = crtc6845.getCursoeAddress();
+        final int cursorAddressUnadjusted = crtc6845.getCursorAddress();
 
         final int startAddress = startAddressUnadjusted * 8;
         final int cursorAddress = cursorAddressUnadjusted * 8;

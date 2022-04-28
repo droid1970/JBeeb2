@@ -5,6 +5,7 @@ import com.jbeeb.device.SystemVIA;
 import com.jbeeb.device.VideoULA;
 import com.jbeeb.memory.Memory;
 import com.jbeeb.teletext.TeletextDisplayRenderer;
+import com.jbeeb.util.ClockListener;
 import com.jbeeb.util.SystemStatus;
 import com.jbeeb.util.Util;
 
@@ -27,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.IntConsumer;
 
-public final class Display {
+public final class Display implements ClockListener {
 
     private static final int IMAGE_BORDER_SIZE = 16;
 
@@ -59,10 +60,21 @@ public final class Display {
         this.videoULA = Objects.requireNonNull(videoULA);
         this.crtc6845 = Objects.requireNonNull(crtc6845);
         this.systemVIA = Objects.requireNonNull(systemVIA);
-        this.graphicsRenderer = new GraphicsModeDisplayRenderer(memory, systemVIA, crtc6845, videoULA);
+        this.graphicsRenderer = new GraphicsModeDisplayRenderer(this, memory, systemVIA, crtc6845, videoULA);
         this.teletextRenderer = new TeletextDisplayRenderer(memory, systemVIA, crtc6845, videoULA);
         SwingUtilities.invokeLater(this::createAndShowUI);
         this.imageComponent = new ImageComponent();
+    }
+
+    @Override
+    public void tick() {
+        if (currentMode != null && renderer != null && renderer.isClockBased()) {
+            renderer.tick(currentMode, image);
+        }
+    }
+
+    public void imageReady() {
+        imageComponent.repaint();
     }
 
     public void addKeyUpListener(IntConsumer l) {
@@ -74,7 +86,24 @@ public final class Display {
     }
 
     public void vsync() {
-        SwingUtilities.invokeLater(imageComponent::repaint);
+        final DisplayMode mode = Util.inferDisplayMode(videoULA, crtc6845);
+        if (mode != currentMode) {
+            currentMode = mode;
+            if (mode == null) {
+                renderer = null;
+            } else {
+                if (mode == DisplayMode.MODE7) {
+                    renderer = teletextRenderer;
+                } else {
+                    renderer = graphicsRenderer;
+                }
+            }
+        }
+        if (renderer != null && renderer.isClockBased()) {
+            renderer.vsync();
+        } else {
+            SwingUtilities.invokeLater(imageComponent::repaint);
+        }
     }
 
     private void createAndShowUI() {
@@ -141,6 +170,9 @@ public final class Display {
         }
     }
 
+    private DisplayRenderer renderer;
+    private DisplayMode currentMode;
+
     private final class ImageComponent extends JComponent {
         public ImageComponent() {
             setOpaque(false);
@@ -159,18 +191,20 @@ public final class Display {
                 g.fillRect(0, 0, getWidth(), getHeight());
             }
 
-            final DisplayMode mode = Util.inferDisplayMode(videoULA, crtc6845);
-            if (mode == null) {
+            if (currentMode == null || renderer == null) {
                 return;
             }
 
-            final DisplayRenderer renderer = (mode == DisplayMode.MODE7) ? teletextRenderer : graphicsRenderer;
-            renderer.refreshImage(mode, image);
-            if (image != null) {
-                if (false) {
-                    g.drawImage(image, 0, 0, null);
-                    return;
-                }
+            if (!renderer.isClockBased()) {
+                renderer.refreshImage(currentMode, image);
+            }
+
+            if (false) {
+                g.drawImage(image, 0, 0, null);
+                return;
+            }
+
+            if (renderer.isImageReady()) {
                 final int iw = image.getWidth();
                 final int ih = image.getHeight();
 
@@ -200,7 +234,16 @@ public final class Display {
                     g.setColor(Color.GRAY);
                     g.drawRect(px - IMAGE_BORDER_SIZE, py - IMAGE_BORDER_SIZE, pw + IMAGE_BORDER_SIZE * 2 - 1, ph + IMAGE_BORDER_SIZE * 2 - 1);
                 }
+
+//            final Rectangle charRect = renderer.getCursorRect();
+//            if (charRect != null) {
+//                final Graphics2D ig = image.createGraphics();
+//                ig.setColor(Color.WHITE);
+//                ig.fillRect(charRect.x, charRect.y + charRect.height - 2, charRect.width, 2);
+//            }
                 g.drawImage(image, px, py, pw, ph, null);
+            } else {
+                repaint();
             }
 
             totalRefreshTimeNanos += System.nanoTime() - startTime;

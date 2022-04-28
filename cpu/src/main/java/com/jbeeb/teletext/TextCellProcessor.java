@@ -3,7 +3,7 @@ package com.jbeeb.teletext;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
-public class TextCellProcessor implements CellProcessor {
+class TextCellProcessor implements CellProcessor {
 
     private final BufferedImage[] images;
 

@@ -2,7 +2,7 @@ package com.jbeeb.teletext;
 
 import java.awt.*;
 
-public final class TeletextConstants {
+final class TeletextConstants {
 
     private static final Color[] COLORS = {
             Color.BLACK,

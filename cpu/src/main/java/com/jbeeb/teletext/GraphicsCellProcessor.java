@@ -2,7 +2,7 @@ package com.jbeeb.teletext;
 
 import java.awt.*;
 
-public final class GraphicsCellProcessor implements CellProcessor {
+final class GraphicsCellProcessor implements CellProcessor {
 
     private final int bits;
 

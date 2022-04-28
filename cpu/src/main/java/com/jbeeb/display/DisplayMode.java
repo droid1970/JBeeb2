@@ -101,4 +101,8 @@ public enum DisplayMode {
             }
         }
     }
+
+    public boolean isClockBased() {
+        return this != MODE7;
+    }
 }

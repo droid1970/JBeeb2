@@ -5,7 +5,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 
-public final class TeletextCharacterDefinitions {
+final class TeletextCharacterDefinitions {
 
     public static final PathSpec SPACE = new PathSpec();
     public static final PathSpec EXCLAMATION_MARK = new PathSpec().moveTo(2.5, 0.5).lineTo(2.5, 4.5).moveTo(2.5, 6.5).lineTo(2.5, 6.5);

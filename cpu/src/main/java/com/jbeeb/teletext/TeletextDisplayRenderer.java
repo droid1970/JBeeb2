@@ -13,12 +13,27 @@ import java.awt.image.BufferedImage;
 import static com.jbeeb.teletext.TeletextConstants.TELETEXT_CHAR_HEIGHT;
 import static com.jbeeb.teletext.TeletextConstants.TELETEXT_CHAR_WIDTH;
 
-public class TeletextDisplayRenderer extends AbstractDisplayRenderer {
+public final class TeletextDisplayRenderer extends AbstractDisplayRenderer {
 
     private final TeletextRenderer renderer = new TeletextRenderer();
 
     public TeletextDisplayRenderer(Memory memory, SystemVIA systemVIA, CRTC6845 crtc6845, VideoULA videoULA) {
         super(memory, systemVIA, crtc6845, videoULA);
+    }
+
+    @Override
+    public boolean isClockBased() {
+        return false;
+    }
+
+    @Override
+    public void tick(DisplayMode mode, BufferedImage image) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void vsync() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -32,7 +47,7 @@ public class TeletextDisplayRenderer extends AbstractDisplayRenderer {
 
         final int unadjustedStartAddress = crtc6845.getScreenStartAddress();
         int address = adjustMode7Address(unadjustedStartAddress);
-        final int cursorAddress = adjustMode7Address(crtc6845.getCursoeAddress());
+        final int cursorAddress = adjustMode7Address(crtc6845.getCursorAddress());
 
         Rectangle cursorRect = null;
 

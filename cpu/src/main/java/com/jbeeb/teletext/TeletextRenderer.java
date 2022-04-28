@@ -2,7 +2,7 @@ package com.jbeeb.teletext;
 
 import java.awt.*;
 
-public final class TeletextRenderer {
+final class TeletextRenderer {
 
     private final CellProcessorSet alphaProcessorSet = new CompoundCellProcessorSet(
             new ControlCodeProcessorSet(),

@@ -5,7 +5,7 @@ import java.util.Map;
 
 import static com.jbeeb.teletext.TeletextCharacterDefinitions.*;
 
-public final class GraphicsCellProcessorSet extends AbstractCellProcessorSet {
+final class GraphicsCellProcessorSet extends AbstractCellProcessorSet {
 
     private static final Map<Integer, CellProcessor> MAP = new HashMap<>();
     static {

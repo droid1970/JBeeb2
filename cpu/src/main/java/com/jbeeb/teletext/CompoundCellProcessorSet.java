@@ -2,7 +2,8 @@ package com.jbeeb.teletext;
 
 import java.util.Arrays;
 
-public final class CompoundCellProcessorSet implements CellProcessorSet {
+final class CompoundCellProcessorSet implements CellProcessorSet {
+
     private final CellProcessorSet[] sets;
 
     public CompoundCellProcessorSet(CellProcessorSet... sets) {

@@ -1,5 +1,5 @@
 package com.jbeeb.teletext;
 
-public interface CellProcessorSet {
+interface CellProcessorSet {
     CellProcessor getProcessor(int code);
 }

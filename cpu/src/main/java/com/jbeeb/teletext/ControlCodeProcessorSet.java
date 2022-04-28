@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public final class ControlCodeProcessorSet extends AbstractCellProcessorSet {
+final class ControlCodeProcessorSet extends AbstractCellProcessorSet {
 
     private static final int BLACK = 0;
     private static final int RED = 1;
@@ -18,6 +18,10 @@ public final class ControlCodeProcessorSet extends AbstractCellProcessorSet {
 
     private static final Map<Integer, CellProcessor> MAP = new HashMap<>();
     static {
+
+        //
+        // Alphanumeric
+        //
         register(129, s -> s.enableText(RED));
         register(130, s -> s.enableText(GREEN));
         register(131, s -> s.enableText(YELLOW));
@@ -27,12 +31,21 @@ public final class ControlCodeProcessorSet extends AbstractCellProcessorSet {
         register(135, s -> s.enableText(WHITE));
         register(136, s -> s.enableText(RED));
 
+        //
+        // Flashing
+        //
         register(136, s -> s.setFlashing(true));
         register(137, s -> s.setFlashing(false));
 
+        //
+        // Double height
+        //
         register(140, s -> s.setDoubleHeight(false));
         register(141, s -> s.setDoubleHeight(true));
 
+        //
+        // Graphics
+        //
         register(145, s -> s.enableGraphics(RED));
         register(146, s -> s.enableGraphics(GREEN));
         register(147, s -> s.enableGraphics(YELLOW));
@@ -42,14 +55,14 @@ public final class ControlCodeProcessorSet extends AbstractCellProcessorSet {
         register(151, s -> s.enableGraphics(WHITE));
         register(152, s -> s.enableGraphics(RED));
 
+        //
+        // Various
+        //
         register(152, s -> s.concealDisplay());
-
         register(153, s -> s.setContiguousGraphics(true));
         register(154, s -> s.setContiguousGraphics(false));
-
         register(156, s -> s.blackBackground());
         register(157, s -> s.newBackground());
-
         register(158, s -> s.setHoldGraphics(true));
         register(159, s -> s.setHoldGraphics(false));
     }

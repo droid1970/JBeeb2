@@ -88,7 +88,7 @@ public final class JavaBeeb {
         final Runner runner = new Runner(
                 2_000_000,
                 maxCycleCount,
-                Arrays.asList(cpu, systemVIA, crtc6845)
+                Arrays.asList(cpu, systemVIA, crtc6845, display)
         );
         final Machine machine = new Machine(runner);
         machine.addInterruptSource(crtc6845);

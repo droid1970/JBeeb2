@@ -3,6 +3,7 @@ package com.jbeeb.device;
 import com.jbeeb.util.InterruptSource;
 import com.jbeeb.util.ClockListener;
 import com.jbeeb.util.SystemStatus;
+import com.jbeeb.util.Util;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSource, ClockListener {
 
@@ -28,6 +30,7 @@ public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSou
     private int v1;
 
     private final int[] registers = new int[18];
+    private AtomicInteger cursorAddress = new AtomicInteger();
     private final List<Runnable> vsyncListeners = new ArrayList<>();
 
     private long cycleCount = 0L;
@@ -128,7 +131,11 @@ public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSou
         return ((registers[12] & 0xFF) << 8) | (registers[13] & 0xFF);
     }
 
-    public int getCursoeAddress() {
+    public int getCursorAddress() {
+        return cursorAddress.get();
+    }
+
+    private int computeCursorAddress() {
         return ((registers[14] & 0xFF) << 8) | (registers[15] & 0xFF);
     }
 
@@ -159,14 +166,14 @@ public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSou
             if (isReadOnly(v0)) {
                 // Do nothing
             } else {
-                if (v0 == 12 || v0 == 13) {
+                registers[v0] = value & 0xFF;
+                if (v0 == 15) {
+                    cursorAddress.set(computeCursorAddress());
                     //Util.log(getName() + " - write " + v0 + " = " + value + " / " + Util.formatHexByte(value), 0);
                 }
-                registers[v0] = value & 0xFF;
                 if (v0 == 10) {
                     cursorBlink = (value & 0x40) != 0;
                     cursorToggleCycles = (value & 0x20) != 0 ? SLOW_CURSOR_CYCLE_COUNT : FAST_CURSOR_CYCLE_COUNT;
-
                 }
             }
         }
