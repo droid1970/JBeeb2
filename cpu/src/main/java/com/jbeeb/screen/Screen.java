@@ -102,7 +102,7 @@ public final class Screen implements ClockListener {
             }
         }
         if (renderer != null && renderer.isClockBased()) {
-            renderer.vsync();
+            renderer.vsync(currentMode);
         } else {
             SwingUtilities.invokeLater(imageComponent::repaint);
         }

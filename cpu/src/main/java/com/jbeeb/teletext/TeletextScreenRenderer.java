@@ -39,7 +39,7 @@ public final class TeletextScreenRenderer extends AbstractScreenRenderer {
     }
 
     @Override
-    public void vsync() {
+    public void vsync(DisplayMode mode) {
         throw new UnsupportedOperationException();
     }
 

@@ -10,5 +10,5 @@ public interface ScreenRenderer {
 
     boolean isClockBased();
     void tick(final DisplayMode mode, final BufferedImage image);
-    void vsync();
+    void vsync(DisplayMode mode);
 }

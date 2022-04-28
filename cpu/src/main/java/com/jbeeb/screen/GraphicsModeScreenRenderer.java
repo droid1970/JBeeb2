@@ -12,13 +12,47 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
 
     private final Screen screen;
 
-    private long cyclesSinceVSync = 0L;
+    private long ticksSinceSync = 0L;
     private int scanLine;
     private Rectangle cursorRect;
+
+    private int startAddress;
+    private int cursorAddress;
+    private boolean cursorOn;
+    private int baseAddress;
+    private int charsPerLine;
+
+    private int horizontalTotal;
+    private int horizontalDisplayed;
+    private int verticalTotal;
+    private int verticalDisplayed;
+    private int verticalAdjust;
 
     public GraphicsModeScreenRenderer(Screen screen, Memory memory, SystemVIA systemVIA, CRTC6845 crtc6845, VideoULA videoULA) {
         super(memory, systemVIA, crtc6845, videoULA);
         this.screen = screen;
+    }
+
+    @Override
+    public void vsync(final DisplayMode mode) {
+
+        startAddress = crtc6845.getScreenStartAddress() * 8;
+        cursorAddress = wrapAddress(mode.getMemoryLocation(), crtc6845.getCursorAddress() * 8);
+        cursorOn = crtc6845.isCursorOn();
+        baseAddress = mode.getMemoryLocation();
+        charsPerLine = mode.getPhysicalCharsPerLine();
+
+        ticksSinceSync = 0L;
+        charPos = 0;
+        scanLine = 0;
+        cursorRect = null;
+        setTimings(
+                crtc6845.getHorizontalTotalChars(),
+                crtc6845.getHorizontalDisplayedChars(),
+                crtc6845.getVerticalTotalChars(),
+                crtc6845.getVerticalDisplayedChars(),
+                crtc6845.getVerticalAdjust()
+        );
     }
 
     @Override
@@ -29,17 +63,47 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
     @Override
     public void tick(DisplayMode mode, BufferedImage image) {
         try {
-            paintNextScanline(mode, image);
+            paintNextCharacter(mode, image);
         } catch (Exception ex) {
             // Deliberately ignored
         }
+        ticksSinceSync++;
     }
 
-    @Override
-    public void vsync() {
-        cyclesSinceVSync = 0L;
-        scanLine = 0;
-        cursorRect = null;
+    private void setTimings(
+            final int horizontalTotal,
+            final int horizontalDisplayed,
+            final int verticalTotal,
+            final int verticalDisplayed,
+            final int verticalAdjust
+    ) {
+        boolean changed = false;
+        if (this.horizontalTotal != horizontalTotal) {
+            this.horizontalTotal = horizontalTotal;
+            changed = true;
+        }
+        if (this.horizontalDisplayed != horizontalDisplayed) {
+            this.horizontalDisplayed = horizontalDisplayed;
+            changed = true;
+        }
+        if (this.verticalTotal != verticalTotal) {
+            this.verticalTotal = verticalTotal;
+            changed = true;
+        }
+        if (this.verticalDisplayed != verticalDisplayed) {
+            this.verticalDisplayed = verticalDisplayed;
+            changed = true;
+        }
+        if (this.verticalAdjust != verticalAdjust) {
+            this.verticalAdjust = verticalAdjust;
+            changed = true;
+        }
+        if (changed) {
+            System.err.println("hdisp = " + horizontalDisplayed + " vdisp = " + verticalDisplayed);
+            System.err.println("htotal = " + horizontalTotal + " vtotal = " + verticalTotal + " vedj = " + verticalAdjust);
+            System.err.println("total clocks = " + (horizontalTotal * (verticalTotal * 8) + verticalAdjust));
+            System.err.println("fast clock = " + videoULA.isFastClockRate());
+        }
     }
 
     @Override
@@ -47,47 +111,40 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
         return scanLine > 255;
     }
 
-    public void paintNextScanline(final DisplayMode mode, final BufferedImage img) {
+    private int charPos = 0;
+    private void paintNextCharacter(final DisplayMode mode, final BufferedImage img) {
         if (scanLine > 255) {
             return;
         }
-
-        if (scanLine == 0) {
+        if (scanLine == 0 && charPos == 0) {
             cursorRect = null;
         }
 
-        final int startAddressUnadjusted  = crtc6845.getScreenStartAddress();
-        final int startAddress = startAddressUnadjusted * 8;
-        final int cursorAddressUnadjusted = crtc6845.getCursorAddress();
-        final int cursorAddress = cursorAddressUnadjusted * 8;
-        if (cursorAddress < startAddress) {
-            int x = 1;
-        }
-        final boolean cursorOn = crtc6845.isCursorOn();
-
-        final int baseAddress = mode.getMemoryLocation();
-        final int charsPerLine = mode.getPhysicalCharsPerLine();
         final int pw = img.getWidth() / mode.getWidth();
         final int ph = img.getHeight() / mode.getHeight();
         final int pixelsPerByte = 8 / mode.getBitsPerPixel();
         final int byteWidth = img.getWidth() / mode.getPhysicalCharsPerLine();
         final int scanLineAddress = startAddress + ((scanLine >>> 3) * charsPerLine * 8) + (scanLine & 0x7);
-        for (int col = 0; col < charsPerLine; col++) {
-            final int address = wrapAddress(baseAddress, scanLineAddress + (col << 3));
-            final int v = memory.readByte(address);
-            final int x = col * byteWidth;
-            int px = x;
-            for (int b = 0; b < pixelsPerByte; b++) {
-                final int rgb = videoULA.getPhysicalColor(mode.getLogicalColour(v, b), mode.getBitsPerPixel()).getRGB() & 0xFFFFFF;
-                fillRect(img, rgb, px, scanLine * ph, pw, ph);
-                px += pw;
-            }
 
-            if (cursorOn && cursorRect == null && address == cursorAddress) {
-                cursorRect = new Rectangle(x, (scanLine & 0xf8) * ph, byteWidth * mode.getBitsPerPixel(), ph * 8);
-            }
+        final int address = wrapAddress(baseAddress, scanLineAddress + (charPos << 3));
+        final int v = memory.readByte(address);
+        final int x = charPos * byteWidth;
+        int px = x;
+        for (int b = 0; b < pixelsPerByte; b++) {
+            final int rgb = videoULA.getPhysicalColor(mode.getLogicalColour(v, b), mode.getBitsPerPixel()).getRGB() & 0xFFFFFF;
+            fillRect(img, rgb, px, scanLine * ph, pw, ph);
+            px += pw;
         }
-        scanLine++;
+
+        if (cursorOn && cursorRect == null && address == cursorAddress) {
+            cursorRect = new Rectangle(x, (scanLine & 0xf8) * ph, byteWidth * mode.getBitsPerPixel(), ph * 8);
+        }
+
+        charPos++;
+        if (charPos == horizontalDisplayed) {
+            charPos = 0;
+            scanLine++;
+        }
         if (scanLine > 255) {
             if (cursorRect != null) {
                 fillRect(img, Color.WHITE.getRGB(), cursorRect.x, cursorRect.y + cursorRect.height - ph , cursorRect.width, ph);
@@ -106,67 +163,7 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
 
     @Override
     public void refreshWholeImage(final DisplayMode mode, final BufferedImage img) {
-        if (isClockBased()) {
-            throw new UnsupportedOperationException();
-        }
-
-        final Graphics2D g = img.createGraphics();
-
-        final int startAddressUnadjusted  = crtc6845.getScreenStartAddress();
-        final int cursorAddressUnadjusted = crtc6845.getCursorAddress();
-
-        final int startAddress = startAddressUnadjusted * 8;
-        final int cursorAddress = cursorAddressUnadjusted * 8;
-        final int charsPerLine = mode.getPhysicalCharsPerLine();
-        final int pw = img.getWidth() / mode.getWidth();
-        final int ph = img.getHeight() / mode.getHeight();
-
-        int address = startAddress;
-        if (address > 0x8000) {
-            return;
-        }
-
-        final int addressCount = mode.getSize();
-        final int bytesPerCharacterLine = mode.getPhysicalCharsPerLine() * 8;
-
-        final int byteWidth = img.getWidth() / mode.getPhysicalCharsPerLine();
-        final int pixelsPerByte = 8 / mode.getBitsPerPixel();
-
-        final boolean cursorOn = crtc6845.isCursorOn();
-
-        Rectangle cursorRect = null;
-
-        for (int i = 0; i < addressCount; i++) {
-
-            final int v = memory.readByte(address);
-
-            // Compute position on screen
-            final int charRow = (i / bytesPerCharacterLine);
-            final int charCol = (i >>> 3) % charsPerLine;
-            final int charLine = (i & 0x7);
-            final int x = charCol * byteWidth;
-
-            final int y = charRow * 8 * ph + (charLine * ph);
-
-            if (cursorOn && address == cursorAddress) {
-                final int cy = charRow * 8 * ph + (7 * ph);
-                cursorRect = new Rectangle(x, charRow * 8 * ph, byteWidth * mode.getBitsPerPixel(), ph * 8);
-            }
-
-            int px = x;
-            for (int b = 0; b < pixelsPerByte; b++) {
-                final int rgb = videoULA.getPhysicalColor(mode.getLogicalColour(v, b), mode.getBitsPerPixel()).getRGB() & 0xFFFFFF;
-                fillRect(img, rgb, px, y, pw, ph);
-                px += pw;
-            }
-
-            address++;
-            if (address == 0x8000) {
-                address = mode.getMemoryLocation();
-            }
-        }
-
-        paintCursor(g, cursorRect, ph);
+        throw new UnsupportedOperationException();
     }
 
     private static void fillRect(final BufferedImage img, final int rgb, final int x, final int y, final int width, final int height) {

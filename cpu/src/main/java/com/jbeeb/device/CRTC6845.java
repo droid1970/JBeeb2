@@ -106,7 +106,15 @@ public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSou
     }
 
     public int getHorizontalTotalChars() {
-        return registers[0];
+        return registers[0] + 1;
+    }
+
+    public int getVerticalTotalChars() {
+        return registers[4] + 1;
+    }
+
+    public int getVerticalAdjust() {
+        return registers[5];
     }
 
     public int getHorizontalDisplayedChars() {
