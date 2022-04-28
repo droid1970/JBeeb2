@@ -1,11 +1,9 @@
 package com.jbeeb.cpu;
 
 import com.jbeeb.device.Device;
-import com.jbeeb.util.InterruptSource;
+import com.jbeeb.util.*;
 import com.jbeeb.assembler.Disassembler;
 import com.jbeeb.memory.Memory;
-import com.jbeeb.util.ClockListener;
-import com.jbeeb.util.Util;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,7 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
-public final class Cpu implements Device, ClockListener, Runnable {
+public final class Cpu implements Device, ClockListener, Runnable, StatusProducer {
 
     private static final boolean USE_QUEUE = true;
 
@@ -27,6 +25,7 @@ public final class Cpu implements Device, ClockListener, Runnable {
 
     private final Memory memory;
 
+    private final SystemStatus systemStatus;
     private final String id = UUID.randomUUID().toString();
     private final InstructionSet instructionSet = new InstructionSet();
     private final AtomicLong cycleCount = new AtomicLong();
@@ -70,10 +69,16 @@ public final class Cpu implements Device, ClockListener, Runnable {
     private boolean irq;
     private boolean nmi;
 
-    public Cpu(final Memory memory) {
+    public Cpu(final SystemStatus systemStatus, final Memory memory) {
+        this.systemStatus = Objects.requireNonNull(systemStatus);
         this.memory = Objects.requireNonNull(memory);
         this.disassembler = new Disassembler(instructionSet, memory);
         reset();
+    }
+
+    @Override
+    public SystemStatus getSystemStatus() {
+        return systemStatus;
     }
 
     public void reset() {

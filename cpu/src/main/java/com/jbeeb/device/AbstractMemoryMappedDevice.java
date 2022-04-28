@@ -1,9 +1,14 @@
 package com.jbeeb.device;
 
+import com.jbeeb.util.StatusProducer;
+import com.jbeeb.util.SystemStatus;
+
 import java.util.Objects;
 import java.util.UUID;
 
-public abstract class AbstractMemoryMappedDevice implements MemoryMappedDevice {
+public abstract class AbstractMemoryMappedDevice implements MemoryMappedDevice, StatusProducer {
+
+    private final SystemStatus systemStatus;
 
     private final String id;
     private final String name;
@@ -11,11 +16,17 @@ public abstract class AbstractMemoryMappedDevice implements MemoryMappedDevice {
     private final int startAddress;
     private final int endAddress;
 
-    public AbstractMemoryMappedDevice(final String name, final int startAddress, final int size) {
+    public AbstractMemoryMappedDevice(final SystemStatus systemStatus, final String name, final int startAddress, final int size) {
+        this.systemStatus = Objects.requireNonNull(systemStatus);
         this.id = UUID.randomUUID().toString();
         this.name = Objects.requireNonNull(name);
         this.startAddress = startAddress;
         this.endAddress = startAddress + size - 1;
+    }
+
+    @Override
+    public SystemStatus getSystemStatus() {
+        return systemStatus;
     }
 
     @Override

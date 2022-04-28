@@ -1,6 +1,7 @@
 package com.jbeeb.device;
 
 import com.jbeeb.util.InterruptSource;
+import com.jbeeb.util.SystemStatus;
 
 import java.awt.*;
 
@@ -36,8 +37,8 @@ public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSou
             0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
     };
 
-    public VideoULA(final String name, final int startAddress) {
-        super(name, startAddress, 8);
+    public VideoULA(final SystemStatus systemStatus, final String name, final int startAddress) {
+        super(systemStatus, name, startAddress, 8);
     }
 
     @Override

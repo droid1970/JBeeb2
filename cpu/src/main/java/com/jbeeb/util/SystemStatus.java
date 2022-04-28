@@ -2,7 +2,10 @@ package com.jbeeb.util;
 
 public interface SystemStatus {
 
+    String KEY_TOTAL_CYCLES = "total-cycles";
+    String KEY_UP_TIME = "up-time";
     String KEY_MILLION_CYCLES_PER_SECOND = "mega-cycles-per-second";
+    String KEY_AVG_DISPLAY_REFRESH_TIME_MILLIS = "avg-display-refresh-time-millis";
 
     SystemStatus NOP = new NopSystemStatus();
 

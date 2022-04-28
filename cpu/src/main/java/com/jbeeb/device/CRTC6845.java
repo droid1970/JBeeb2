@@ -2,6 +2,7 @@ package com.jbeeb.device;
 
 import com.jbeeb.util.InterruptSource;
 import com.jbeeb.util.ClockListener;
+import com.jbeeb.util.SystemStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,11 +36,12 @@ public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSou
     private long cursorToggleCycles = FAST_CURSOR_CYCLE_COUNT;
 
     public CRTC6845(
+            final SystemStatus systemStatus,
             final String name,
             final int startAddress,
             SystemVIA systemVIA
     ) {
-        super(name, startAddress, 8);
+        super(systemStatus, name, startAddress, 8);
         if (TICK_WITH_EXECUTOR) {
             this.executor = Executors.newScheduledThreadPool(1, r -> {
                 final Thread t = new Thread(r, "crtc-6845-vsync");

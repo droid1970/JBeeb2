@@ -149,7 +149,7 @@ public final class Util {
         final Assembler assembler = new Assembler(codeStart, memory, instructionSet);
         assembler.assemble(statements);
         assembler.assemble("HLT");
-        return new Cpu(memory).setVerboseSupplier(null);
+        return new Cpu(SystemStatus.NOP, memory).setVerboseSupplier(null);
     }
 
     public static Cpu runCpu(final int codeStart, final String... statements) {

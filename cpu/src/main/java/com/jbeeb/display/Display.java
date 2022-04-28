@@ -4,6 +4,7 @@ import com.jbeeb.device.CRTC6845;
 import com.jbeeb.device.SystemVIA;
 import com.jbeeb.device.VideoULA;
 import com.jbeeb.memory.Memory;
+import com.jbeeb.util.SystemStatus;
 import com.jbeeb.util.Util;
 
 import java.awt.datatransfer.Clipboard;
@@ -27,10 +28,9 @@ import java.util.function.IntConsumer;
 
 public final class Display {
 
-    private static final boolean VERBOSE = false;
-
     private static final int IMAGE_BORDER_SIZE = 16;
 
+    private final SystemStatus systemStatus;
     private final VideoULA videoULA;
     private final CRTC6845 crtc6845;
     private final SystemVIA systemVIA;
@@ -41,11 +41,20 @@ public final class Display {
     private final TeletextDisplayRenderer teletextRenderer;
 
     private final BufferedImage image = new BufferedImage(640, 512, BufferedImage.TYPE_INT_RGB);
-    private long cycle = 0L;
+
+    private long cycleCount = 0L;
+    private long totalRefreshTimeNanos = 0L;
 
     private final ImageComponent imageComponent;
 
-    public Display(final Memory memory, final VideoULA videoULA, final CRTC6845 crtc6845, final SystemVIA systemVIA) {
+    public Display(
+            final SystemStatus systemStatus,
+            final Memory memory,
+            final VideoULA videoULA,
+            final CRTC6845 crtc6845,
+            final SystemVIA systemVIA
+    ) {
+        this.systemStatus = Objects.requireNonNull(systemStatus);
         this.videoULA = Objects.requireNonNull(videoULA);
         this.crtc6845 = Objects.requireNonNull(crtc6845);
         this.systemVIA = Objects.requireNonNull(systemVIA);
@@ -74,11 +83,63 @@ public final class Display {
         ((JComponent) frame.getContentPane()).setBorder(new EmptyBorder(8, 8, 8, 8));
         frame.getContentPane().setBackground(new Color(32, 32, 32));
         frame.getContentPane().add(BorderLayout.CENTER, imageComponent);
+
+        final StatusBar statusBar = new StatusBar();
+        frame.getContentPane().add(BorderLayout.SOUTH, statusBar);
+
+        final Timer refreshTimer = new Timer(1000, e -> statusBar.refresh());
+        refreshTimer.start();
+
         frame.pack();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
         frame.setLocationRelativeTo(null);
         SwingUtilities.invokeLater(() -> imageComponent.requestFocus());
+    }
+
+    private final class StatusBar extends JComponent {
+
+        final JLabel mhzLabel;
+        final JLabel screenLabel;
+
+        StatusBar() {
+            setOpaque(true);
+            setBackground(Color.DARK_GRAY);
+            setBorder(new EmptyBorder(2, 2, 2, 2));
+            setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
+
+            mhzLabel = createLabel();
+            add(mhzLabel);
+
+            screenLabel = createLabel();
+            add(Box.createRigidArea(new Dimension(4, 0)));
+            add(screenLabel);
+
+            add(Box.createGlue());
+            setPreferredSize(new Dimension(0, 20));
+        }
+
+        final JLabel createLabel() {
+            final JLabel label = new JLabel();
+            label.setOpaque(false);
+            label.setForeground(Color.LIGHT_GRAY);
+            return label;
+        }
+
+        void refresh() {
+            final String mhzString = systemStatus.getString(SystemStatus.KEY_MILLION_CYCLES_PER_SECOND, "?");
+            mhzLabel.setText("clockrate (mhz) = " + mhzString);
+            final String displayRefreshString = systemStatus.getString(SystemStatus.KEY_AVG_DISPLAY_REFRESH_TIME_MILLIS, "?");
+            screenLabel.setText("display (ms) = " + displayRefreshString);
+        }
+
+        @Override
+        public void paintComponent(final Graphics g) {
+            if (isOpaque()) {
+                g.setColor(getBackground());
+                g.fillRect(0, 0, getWidth(), getHeight());
+            }
+        }
     }
 
     private final class ImageComponent extends JComponent {
@@ -143,10 +204,18 @@ public final class Display {
                 g.drawImage(image, px, py, pw, ph, null);
             }
 
-            if (VERBOSE && (cycle % 100) == 0) {
-                System.err.println("Updated display in " + Util.formatDurationNanosAsMillis(System.nanoTime() - startTime) + "ms");
+            totalRefreshTimeNanos += System.nanoTime() - startTime;
+            cycleCount++;
+
+            if ((cycleCount % 100) == 0) {
+                final long avgNanos = totalRefreshTimeNanos / cycleCount;
+                final String fmt = Util.formatDurationNanosAsMillis(avgNanos);
+                systemStatus.putString(SystemStatus.KEY_AVG_DISPLAY_REFRESH_TIME_MILLIS, fmt);
+
+                // Implement a rolling average
+                cycleCount = 0l;
+                totalRefreshTimeNanos = 0L;
             }
-            cycle++;
         }
     }
 

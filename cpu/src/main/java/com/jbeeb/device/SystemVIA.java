@@ -3,6 +3,7 @@ package com.jbeeb.device;
 import com.jbeeb.keymap.ColRow;
 import com.jbeeb.keymap.KeyMap;
 import com.jbeeb.keymap.TargetKey;
+import com.jbeeb.util.SystemStatus;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -20,8 +21,13 @@ public class SystemVIA extends VIA {
     private boolean capslockLight;
     private boolean shiftlockLight;
 
-    public SystemVIA(String name, int startAddress, int size) {
-        super(name, startAddress, size);
+    public SystemVIA(
+            final SystemStatus systemStatus,
+            final String name,
+            final int startAddress,
+            final int size
+    ) {
+        super(systemStatus, name, startAddress, size);
     }
 
     public final void characterDown(final char c) {

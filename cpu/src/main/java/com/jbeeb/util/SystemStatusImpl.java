@@ -3,10 +3,11 @@ package com.jbeeb.util;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class SystemStatusImpl implements SystemStatus {
 
-    private final Map<String, String> statusEntries = new HashMap<>();
+    private final Map<String, String> statusEntries = new ConcurrentHashMap<>();
 
     public void putString(final String key, final String value) {
         statusEntries.put(Objects.requireNonNull(key), value);

@@ -2,6 +2,7 @@ package com.jbeeb.device;
 
 import com.jbeeb.util.InterruptSource;
 import com.jbeeb.util.ClockListener;
+import com.jbeeb.util.SystemStatus;
 
 public class VIA extends AbstractMemoryMappedDevice implements ClockListener, InterruptSource {
 
@@ -59,8 +60,13 @@ public class VIA extends AbstractMemoryMappedDevice implements ClockListener, In
 
     //private final VIA self;
 
-    public VIA(final String name, final int startAddress, final int size) {
-        super(name, startAddress, size);
+    public VIA(
+            final SystemStatus systemStatus,
+            final String name,
+            final int startAddress,
+            final int size
+    ) {
+        super(systemStatus, name, startAddress, size);
         //this.self = this;
         reset();
     }

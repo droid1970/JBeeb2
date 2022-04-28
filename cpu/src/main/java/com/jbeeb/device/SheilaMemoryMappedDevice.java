@@ -1,11 +1,12 @@
 package com.jbeeb;
 
 import com.jbeeb.device.AbstractMemoryMappedDevice;
+import com.jbeeb.util.SystemStatus;
 
 public final class SheilaMemoryMappedDevice extends AbstractMemoryMappedDevice {
 
-    public SheilaMemoryMappedDevice() {
-        super("sheila", 0xFE00, 0x100);
+    public SheilaMemoryMappedDevice(final SystemStatus systemStatus) {
+        super(systemStatus, "sheila", 0xFE00, 0x100);
     }
 
     @Override
