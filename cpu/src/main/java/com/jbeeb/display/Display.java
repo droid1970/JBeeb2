@@ -4,6 +4,7 @@ import com.jbeeb.device.CRTC6845;
 import com.jbeeb.device.SystemVIA;
 import com.jbeeb.device.VideoULA;
 import com.jbeeb.memory.Memory;
+import com.jbeeb.teletext.TeletextDisplayRenderer;
 import com.jbeeb.util.SystemStatus;
 import com.jbeeb.util.Util;
 
@@ -34,8 +35,8 @@ public final class Display {
     private final VideoULA videoULA;
     private final CRTC6845 crtc6845;
     private final SystemVIA systemVIA;
-    private List<IntConsumer> keyUpListeners = new ArrayList<>();
-    private List<BiConsumer<Integer, Boolean>> keyDownListeners = new ArrayList<>();
+    private final List<IntConsumer> keyUpListeners = new ArrayList<>();
+    private final List<BiConsumer<Integer, Boolean>> keyDownListeners = new ArrayList<>();
 
     private final DisplayRenderer graphicsRenderer;
     private final TeletextDisplayRenderer teletextRenderer;
@@ -60,9 +61,7 @@ public final class Display {
         this.systemVIA = Objects.requireNonNull(systemVIA);
         this.graphicsRenderer = new GraphicsModeDisplayRenderer(memory, systemVIA, crtc6845, videoULA);
         this.teletextRenderer = new TeletextDisplayRenderer(memory, systemVIA, crtc6845, videoULA);
-        SwingUtilities.invokeLater(() -> {
-            createAndShowUI();
-        });
+        SwingUtilities.invokeLater(this::createAndShowUI);
         this.imageComponent = new ImageComponent();
     }
 
@@ -75,7 +74,7 @@ public final class Display {
     }
 
     public void vsync() {
-        SwingUtilities.invokeLater(() -> imageComponent.repaint());
+        SwingUtilities.invokeLater(imageComponent::repaint);
     }
 
     private void createAndShowUI() {
@@ -94,7 +93,7 @@ public final class Display {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
         frame.setLocationRelativeTo(null);
-        SwingUtilities.invokeLater(() -> imageComponent.requestFocus());
+        SwingUtilities.invokeLater(imageComponent::requestFocus);
     }
 
     private final class StatusBar extends JComponent {
@@ -119,7 +118,7 @@ public final class Display {
             setPreferredSize(new Dimension(0, 20));
         }
 
-        final JLabel createLabel() {
+        JLabel createLabel() {
             final JLabel label = new JLabel();
             label.setOpaque(false);
             label.setForeground(Color.LIGHT_GRAY);
@@ -213,7 +212,7 @@ public final class Display {
                 systemStatus.putString(SystemStatus.KEY_AVG_DISPLAY_REFRESH_TIME_MILLIS, fmt);
 
                 // Implement a rolling average
-                cycleCount = 0l;
+                cycleCount = 0L;
                 totalRefreshTimeNanos = 0L;
             }
         }
