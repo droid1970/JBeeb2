@@ -3,21 +3,23 @@ package com.jbeeb.teletext;
 import com.jbeeb.device.CRTC6845;
 import com.jbeeb.device.SystemVIA;
 import com.jbeeb.device.VideoULA;
-import com.jbeeb.display.AbstractDisplayRenderer;
-import com.jbeeb.display.DisplayMode;
+import com.jbeeb.screen.AbstractScreenRenderer;
+import com.jbeeb.screen.DisplayMode;
 import com.jbeeb.memory.Memory;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
 import static com.jbeeb.teletext.TeletextConstants.TELETEXT_CHAR_HEIGHT;
 import static com.jbeeb.teletext.TeletextConstants.TELETEXT_CHAR_WIDTH;
 
-public final class TeletextDisplayRenderer extends AbstractDisplayRenderer {
+public final class TeletextScreenRenderer extends AbstractScreenRenderer {
 
     private final TeletextRenderer renderer = new TeletextRenderer();
 
-    public TeletextDisplayRenderer(Memory memory, SystemVIA systemVIA, CRTC6845 crtc6845, VideoULA videoULA) {
+    public TeletextScreenRenderer(Memory memory, SystemVIA systemVIA, CRTC6845 crtc6845, VideoULA videoULA) {
         super(memory, systemVIA, crtc6845, videoULA);
     }
 
@@ -32,12 +34,17 @@ public final class TeletextDisplayRenderer extends AbstractDisplayRenderer {
     }
 
     @Override
+    public boolean isImageReady() {
+        return true;
+    }
+
+    @Override
     public void vsync() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void refreshImage(DisplayMode mode, BufferedImage img) {
+    public void refreshWholeImage(DisplayMode mode, BufferedImage img) {
         final Graphics2D g = img.createGraphics();
 
         final int leftMargin = (img.getWidth() - (TELETEXT_CHAR_WIDTH * 40)) / 2;

@@ -1,4 +1,4 @@
-package com.jbeeb.display;
+package com.jbeeb.screen;
 
 
 public enum DisplayMode {
@@ -19,7 +19,7 @@ public enum DisplayMode {
     private final int physicalCharsPerLine;
     private final int size;
 
-    private DisplayMode(
+    DisplayMode(
             int memoryLocation,
             int width,
             int height,

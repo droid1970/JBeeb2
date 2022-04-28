@@ -1,4 +1,4 @@
-package com.jbeeb.display;
+package com.jbeeb.screen;
 
 import com.jbeeb.device.CRTC6845;
 import com.jbeeb.device.SystemVIA;
@@ -8,17 +8,17 @@ import com.jbeeb.memory.Memory;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
-public class GraphicsModeDisplayRenderer extends AbstractDisplayRenderer {
+public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
 
-    private final Display display;
+    private final Screen screen;
 
     private long cyclesSinceVSync = 0L;
     private int scanLine;
     private Rectangle cursorRect;
 
-    public GraphicsModeDisplayRenderer(Display display, Memory memory, SystemVIA systemVIA, CRTC6845 crtc6845, VideoULA videoULA) {
+    public GraphicsModeScreenRenderer(Screen screen, Memory memory, SystemVIA systemVIA, CRTC6845 crtc6845, VideoULA videoULA) {
         super(memory, systemVIA, crtc6845, videoULA);
-        this.display = display;
+        this.screen = screen;
     }
 
     @Override
@@ -30,7 +30,9 @@ public class GraphicsModeDisplayRenderer extends AbstractDisplayRenderer {
     public void tick(DisplayMode mode, BufferedImage image) {
         try {
             paintNextScanline(mode, image);
-        } catch (Exception ex) {}
+        } catch (Exception ex) {
+            // Deliberately ignored
+        }
     }
 
     @Override
@@ -38,19 +40,18 @@ public class GraphicsModeDisplayRenderer extends AbstractDisplayRenderer {
         cyclesSinceVSync = 0L;
         scanLine = 0;
         cursorRect = null;
-    }@Override
+    }
+
+    @Override
     public boolean isImageReady() {
         return scanLine > 255;
     }
-    @Override
-    public Rectangle getCursorRect() {
-        return cursorRect;
-    }
 
-    public boolean paintNextScanline(final DisplayMode mode, final BufferedImage img) {
+    public void paintNextScanline(final DisplayMode mode, final BufferedImage img) {
         if (scanLine > 255) {
-            return false;
+            return;
         }
+
         if (scanLine == 0) {
             cursorRect = null;
         }
@@ -92,9 +93,8 @@ public class GraphicsModeDisplayRenderer extends AbstractDisplayRenderer {
                 fillRect(img, Color.WHITE.getRGB(), cursorRect.x, cursorRect.y + cursorRect.height - ph , cursorRect.width, ph);
                 cursorRect = null;
             }
-            display.imageReady();
+            screen.imageReady();
         }
-        return (scanLine < 256);
     }
 
     private static int wrapAddress(final int baseAddress, int address) {
@@ -105,7 +105,7 @@ public class GraphicsModeDisplayRenderer extends AbstractDisplayRenderer {
     }
 
     @Override
-    public void refreshImage(final DisplayMode mode, final BufferedImage img) {
+    public void refreshWholeImage(final DisplayMode mode, final BufferedImage img) {
         if (isClockBased()) {
             throw new UnsupportedOperationException();
         }

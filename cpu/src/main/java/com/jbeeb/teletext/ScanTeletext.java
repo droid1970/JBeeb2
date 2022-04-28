@@ -1,7 +1,5 @@
 package com.jbeeb.teletext;
 
-import com.jbeeb.teletext.PathSpec;
-
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
@@ -62,12 +60,12 @@ public class ScanTeletext {
         static int CELL_SIZE = 32;
 
         private Char ch= new Char();
-        private PathSpec pathSpec = new PathSpec();
+        private AlphaDefinition alphaDefinition = new AlphaDefinition();
         private Path2D.Double path = new Path2D.Double();
         private int charCode = 102;
         private StringBuilder pathCode = newPathCodeBuilder();
 
-        private final StringBuilder newPathCodeBuilder() {
+        private StringBuilder newPathCodeBuilder() {
             return new StringBuilder("PATH_MAP.put(" + (charCode++) + ", new PathSpec()");
         }
 
@@ -86,20 +84,18 @@ public class ScanTeletext {
                     final double py = ipy + 0.5;
                     if (x >= 0 && x < CELL_SIZE * 7 && y >= 0 && y < CELL_SIZE * 10) {
                         if (e.getButton() == MouseEvent.BUTTON1) {
-                            pathSpec.moveTo(px, py);
-                            pathCode.append(".moveTo(" + px + ", " + py + ")");
+                            alphaDefinition.moveTo(px, py);
+                            pathCode.append(".moveTo(").append(px).append(", ").append(py).append(")");
                             path.moveTo(tX(px), tY(py));
                         } else if (e.getButton() == MouseEvent.BUTTON3) {
-                            pathSpec.lineTo(px, py);
-                            pathCode.append(".lineTo(" + px + ", " + py + ")");
+                            alphaDefinition.lineTo(px, py);
+                            pathCode.append(".lineTo(").append(px).append(", ").append(py).append(")");
                             path.lineTo(LEFT_MARGIN + px * X_SCALE, TOP_MARGIN + py * Y_SCALE);
                         }
                     } else {
                         if (e.getButton() == MouseEvent.BUTTON1) {
                             if (path != null) {
-                                savedPaths.add(path);
-                                savedPathSpecs.add(pathSpec);
-                                //charImages.add(createPathImage(path, CELL_SIZE));
+                                savedAlphaDefinitions.add(alphaDefinition);
                             }
                         }
                         if (e.getButton() == MouseEvent.BUTTON3) {
@@ -107,7 +103,7 @@ public class ScanTeletext {
                             pathCode.append(");");
                             System.out.println(pathCode);
                             path = new Path2D.Double();
-                            pathSpec = new PathSpec();
+                            alphaDefinition = new AlphaDefinition();
                             pathCode = newPathCodeBuilder();
 //                            pathCode = new StringBuilder();
 //                            pathCode.append("new PathSpec(");
@@ -124,8 +120,7 @@ public class ScanTeletext {
             repaint();
         }
 
-        List<Path2D.Double> savedPaths = new ArrayList<>();
-        List<PathSpec> savedPathSpecs = new ArrayList<>();
+        List<AlphaDefinition> savedAlphaDefinitions = new ArrayList<>();
 
         @Override
         public void paintComponent(final Graphics g1) {
@@ -148,7 +143,7 @@ public class ScanTeletext {
                 g.drawRect(CELL_SIZE * 9, CELL_SIZE, charImage.getWidth() - 1, charImage.getHeight() - 1);
                 int x = CELL_SIZE * 18;
                 //for (Path2D.Double p : savedPaths) {
-                for (PathSpec p: savedPathSpecs) {
+                for (AlphaDefinition p: savedAlphaDefinitions) {
                     final Path2D.Double path = p.toPath(px -> tX(px), py -> tY(py));
                     final BufferedImage ci = createPathImage(path, 1);
                     paintImage(g, ci, x, CELL_SIZE, 1, true);
@@ -265,7 +260,6 @@ public class ScanTeletext {
                     // Go left to find first white pixel
                     int lx;
                     for (lx = x; lx >= 0 && isBlackAt(lx, y); lx--) {
-
                     }
                     lx++;
                     int by;

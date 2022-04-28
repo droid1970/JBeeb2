@@ -6,7 +6,7 @@ import com.jbeeb.cpu.Flag;
 import com.jbeeb.cpu.InstructionSet;
 import com.jbeeb.device.CRTC6845;
 import com.jbeeb.device.VideoULA;
-import com.jbeeb.display.DisplayMode;
+import com.jbeeb.screen.DisplayMode;
 import com.jbeeb.memory.Memory;
 
 import java.text.DecimalFormat;

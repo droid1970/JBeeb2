@@ -10,8 +10,6 @@ public abstract class AbstractMemory implements Memory {
     private final int[] memory;
     private final boolean readOnly;
 
-    private int pos;
-
     public AbstractMemory(final int start, final int size, final boolean readOnly) {
         this(start, new int[size], readOnly);
     }

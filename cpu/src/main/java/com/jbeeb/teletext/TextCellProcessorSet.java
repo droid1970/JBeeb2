@@ -1,6 +1,6 @@
 package com.jbeeb.teletext;
 
-import static com.jbeeb.teletext.TeletextCharacterDefinitions.*;
+import static com.jbeeb.teletext.TeletextAlphaDefinition.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -212,7 +212,7 @@ final class TextCellProcessorSet extends AbstractCellProcessorSet {
         super(MAP);
     }
 
-    private static void register(final int code, final PathSpec characterSpec) {
+    private static void register(final int code, final AlphaDefinition characterSpec) {
         MAP.put(code, new TextCellProcessor(characterSpec));
     }
 }

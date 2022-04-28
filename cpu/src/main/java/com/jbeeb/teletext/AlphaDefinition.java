@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
-final class PathSpec {
+final class AlphaDefinition {
 
     private final List<PathCommand> commands = new ArrayList<>();
 
@@ -23,12 +23,12 @@ final class PathSpec {
         return path;
     }
 
-    public PathSpec moveTo(final double x, final double y) {
+    public AlphaDefinition moveTo(final double x, final double y) {
         addCommand(PathCommand.moveTo(x, y));
         return this;
     }
 
-    public PathSpec lineTo(final double x, final double y) {
+    public AlphaDefinition lineTo(final double x, final double y) {
         addCommand(PathCommand.lineTo(x, y));
         return this;
     }

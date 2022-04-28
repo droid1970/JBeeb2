@@ -3,6 +3,7 @@ package com.jbeeb.keymap;
 import java.util.Objects;
 
 public final class TargetKey {
+
     private final int col;
     private final int row;
     private final Boolean shift; // can be null

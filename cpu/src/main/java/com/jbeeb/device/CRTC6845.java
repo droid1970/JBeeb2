@@ -3,7 +3,6 @@ package com.jbeeb.device;
 import com.jbeeb.util.InterruptSource;
 import com.jbeeb.util.ClockListener;
 import com.jbeeb.util.SystemStatus;
-import com.jbeeb.util.Util;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,10 +26,9 @@ public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSou
     private static final long SLOW_CURSOR_CYCLE_COUNT = VERTICAL_SYNC_CYCLE_COUNT * 16;
 
     private int v0;
-    private int v1;
 
     private final int[] registers = new int[18];
-    private AtomicInteger cursorAddress = new AtomicInteger();
+    private final AtomicInteger cursorAddress = new AtomicInteger();
     private final List<Runnable> vsyncListeners = new ArrayList<>();
 
     private long cycleCount = 0L;
@@ -163,13 +161,10 @@ public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSou
         if (index == 0) {
             v0 = value;
         } else {
-            if (isReadOnly(v0)) {
-                // Do nothing
-            } else {
+            if (!isReadOnly(v0)) {
                 registers[v0] = value & 0xFF;
                 if (v0 == 15) {
                     cursorAddress.set(computeCursorAddress());
-                    //Util.log(getName() + " - write " + v0 + " = " + value + " / " + Util.formatHexByte(value), 0);
                 }
                 if (v0 == 10) {
                     cursorBlink = (value & 0x40) != 0;

@@ -3,7 +3,7 @@ package com.jbeeb.teletext;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.jbeeb.teletext.TeletextCharacterDefinitions.*;
+import static com.jbeeb.teletext.TeletextAlphaDefinition.*;
 
 final class GraphicsCellProcessorSet extends AbstractCellProcessorSet {
 
@@ -122,11 +122,11 @@ final class GraphicsCellProcessorSet extends AbstractCellProcessorSet {
         MAP.put(code, new GraphicsCellProcessor(bits));
     }
 
-    private static void registerGraphics(final int code, PathSpec characterSpec) {
+    private static void registerGraphics(final int code, AlphaDefinition characterSpec) {
         MAP.put(code, new TextCellProcessor(characterSpec));
     }
 
-    private static void registerText(final int startCode, PathSpec... specs) {
+    private static void registerText(final int startCode, AlphaDefinition... specs) {
         int code = startCode;
         for (int i = 0; i < specs.length; i++) {
             registerGraphics(code++, specs[i]);

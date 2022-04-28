@@ -7,10 +7,10 @@ class TextCellProcessor implements CellProcessor {
 
     private final BufferedImage[] images;
 
-    TextCellProcessor(final PathSpec pathSpec) {
+    TextCellProcessor(final AlphaDefinition alphaDefinition) {
         this.images = new BufferedImage[TeletextConstants.getColourCount()];
         for (int i = 0; i < TeletextConstants.getColourCount(); i++) {
-            images[i] = TeletextCharacterDefinitions.createCharacterImage(pathSpec, TeletextConstants.getColour(i));
+            images[i] = TeletextAlphaDefinition.createCharacterImage(alphaDefinition, TeletextConstants.getColour(i));
         }
     }
 
