@@ -34,10 +34,9 @@ public interface Memory {
         return new RandomAccessMemory(start, size);
     }
 
-    static Memory bbcMicroB(final List<MemoryMappedDevice> devices, final Memory languageRom, final Memory osRom) {
+    static Memory bbcMicroB(final List<MemoryMappedDevice> devices, final Memory ram, final Memory languageRom, final Memory osRom) {
         final List<Memory> regions = new ArrayList<>();
         regions.addAll(devices);
-        final Memory ram = randomAccessMemory(0, 32 * KB);
         regions.add(ram);
         regions.add(languageRom);
         regions.add(osRom);

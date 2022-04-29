@@ -56,6 +56,8 @@ public final class Runner {
         delayNanos = Math.min(initialDelayNanos, Math.max(10L, (long) (delayNanos * delta)));
     }
 
+    private Runnable saveStateCallback;
+
     private void tick() {
         if (!listeners.isEmpty()) {
             for (ClockListener l : listeners) {

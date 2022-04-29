@@ -50,6 +50,7 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
         charPos = 0;
         scanLine = 0;
         cursorRect = null;
+
         setTimings(
                 crtc6845.getHorizontalTotalChars(),
                 crtc6845.getHorizontalDisplayedChars(),

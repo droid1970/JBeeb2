@@ -1,13 +1,19 @@
 package com.jbeeb.memory;
 
+import com.jbeeb.util.StateKey;
 import com.jbeeb.util.Util;
 
 import java.util.Arrays;
 
 public abstract class AbstractMemory implements Memory {
 
+    @StateKey(key = "start")
     private final int start;
+
+    @StateKey(key = "memory")
     private final int[] memory;
+
+    @StateKey(key = "readOnly")
     private final boolean readOnly;
 
     public AbstractMemory(final int start, final int size, final boolean readOnly) {

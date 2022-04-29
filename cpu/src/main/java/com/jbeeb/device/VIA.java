@@ -2,6 +2,7 @@ package com.jbeeb.device;
 
 import com.jbeeb.util.InterruptSource;
 import com.jbeeb.util.ClockListener;
+import com.jbeeb.util.StateKey;
 import com.jbeeb.util.SystemStatus;
 
 public class VIA extends AbstractMemoryMappedDevice implements ClockListener, InterruptSource {
@@ -29,33 +30,82 @@ public class VIA extends AbstractMemoryMappedDevice implements ClockListener, In
     private static final int INT_CB1 = 0x10;
     private static final int INT_CB2 = 0x08;
 
+    @StateKey(key = "ora")
     protected int ora;
+
+    @StateKey(key = "orb")
     protected int orb;
+
+    @StateKey(key = "ira")
     protected int ira;
+
+    @StateKey(key = "irb")
     protected int irb;
+
+    @StateKey(key = "ddra")
     protected int ddra;
+
+    @StateKey(key = "ddrb")
     protected int ddrb;
+
+    @StateKey(key = "sr")
     protected int sr;
+
+    @StateKey(key = "t1l")
     protected int t1l;
+
+    @StateKey(key = "t2l")
     protected int t2l;
+
+    @StateKey(key = "t1c")
     protected int t1c;
+
+    @StateKey(key = "t2c")
     protected int t2c;
+
+    @StateKey(key = "acr")
     protected int acr;
+
+    @StateKey(key = "pcr")
     protected int pcr;
+
+    @StateKey(key = "ifr")
     protected int ifr;
+
+    @StateKey(key = "ier")
     protected int ier;
+
+    @StateKey(key = "t1hit")
     protected boolean t1hit;
+
+    @StateKey(key = "t2hit")
     protected boolean t2hit;
+
+    @StateKey(key = "portAPins")
     protected int portAPins;
+
+    @StateKey(key = "portBPins")
     protected int portBPins;
+
+    @StateKey(key = "ca1")
     protected boolean ca1;
+
+    @StateKey(key = "ca2")
     protected boolean ca2;
+
+    @StateKey(key = "cb1")
     protected boolean cb1;
+
+    @StateKey(key = "cb2")
     protected boolean cb2;
 
     protected Runnable ca2callback = null;
     protected Runnable cb2callback = null;
+
+    @StateKey(key = "justhit")
     protected int justhit;
+
+    @StateKey(key = "t1_pb7")
     protected int t1_pb7;
 
     //private final VIA self;

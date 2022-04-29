@@ -1,10 +1,12 @@
 package com.jbeeb.device;
 
 import com.jbeeb.util.InterruptSource;
+import com.jbeeb.util.StateKey;
 import com.jbeeb.util.SystemStatus;
 
 import java.awt.*;
 
+@StateKey(key = "videoULA")
 public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSource {
 
     private static final PhysicalColor[] PHYSICAL_COLORS = new PhysicalColor[]{
@@ -26,13 +28,25 @@ public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSou
             PhysicalColor.flashing(Color.WHITE, Color.BLACK)
     };
 
+    @StateKey(key = "masterCursorSize")
     private int masterCursorSize;
+
+    @StateKey(key = "cursorWidthBbytes")
     private int cursorWidthBbytes;
+
+    @StateKey(key = "clockRate")
     private int clockRate;
+
+    @StateKey(key = "charactersPerLine")
     private int charactersPerLine;
+
+    @StateKey(key = "teletext")
     private int teletext;
+
+    @StateKey(key = "flashIndex")
     private int flashIndex;
 
+    @StateKey(key = "palette")
     private final int[] palette = {
             0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
     };

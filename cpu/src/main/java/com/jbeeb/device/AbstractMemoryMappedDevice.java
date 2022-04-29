@@ -1,5 +1,6 @@
 package com.jbeeb.device;
 
+import com.jbeeb.util.StateKey;
 import com.jbeeb.util.StatusProducer;
 import com.jbeeb.util.SystemStatus;
 

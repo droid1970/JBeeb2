@@ -3,6 +3,7 @@ package com.jbeeb.screen;
 import com.jbeeb.device.CRTC6845;
 import com.jbeeb.device.SystemVIA;
 import com.jbeeb.device.VideoULA;
+import com.jbeeb.main.BBCMicro;
 import com.jbeeb.memory.Memory;
 import com.jbeeb.teletext.TeletextScreenRenderer;
 import com.jbeeb.util.ClockListener;
@@ -35,6 +36,7 @@ public final class Screen implements ClockListener {
     private static final int IMAGE_HEIGHT = 512;
 
     private final SystemStatus systemStatus;
+    private final BBCMicro bbc;
     private final VideoULA videoULA;
     private final CRTC6845 crtc6845;
     private final SystemVIA systemVIA;
@@ -53,12 +55,14 @@ public final class Screen implements ClockListener {
 
     public Screen(
             final SystemStatus systemStatus,
+            final BBCMicro bbc,
             final Memory memory,
             final VideoULA videoULA,
             final CRTC6845 crtc6845,
             final SystemVIA systemVIA
     ) {
         this.systemStatus = Objects.requireNonNull(systemStatus);
+        this.bbc = Objects.requireNonNull(bbc);
         this.videoULA = Objects.requireNonNull(videoULA);
         this.crtc6845 = Objects.requireNonNull(crtc6845);
         this.systemVIA = Objects.requireNonNull(systemVIA);
@@ -124,6 +128,7 @@ public final class Screen implements ClockListener {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
         frame.setLocationRelativeTo(null);
+        imageComponent.setFocusable(true);
         SwingUtilities.invokeLater(imageComponent::requestFocus);
     }
 
@@ -138,6 +143,22 @@ public final class Screen implements ClockListener {
             setBorder(new EmptyBorder(4, 8, 8, 4));
             setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
 
+            final JButton saveStateButton = createButton("SAVE");
+            saveStateButton.addActionListener(e -> {
+                bbc.saveState();
+            });
+            add(saveStateButton);
+
+            add(Box.createRigidArea(new Dimension(4, 0)));
+
+            final JButton restoreStateButton = createButton("RESTORE");
+            restoreStateButton.addActionListener(e -> {
+                bbc.restoreState();
+            });
+            add(restoreStateButton);
+
+            add(Box.createRigidArea(new Dimension(4, 0)));
+
             mhzLabel = createLabel();
             add(mhzLabel);
 
@@ -145,7 +166,17 @@ public final class Screen implements ClockListener {
             add(Box.createRigidArea(new Dimension(4, 0)));
             add(screenLabel);
 
+
+
             add(Box.createGlue());
+        }
+
+        JButton createButton(final String text) {
+            final JButton button = new JButton(text);
+            button.setFocusable(false);
+            button.setForeground(Color.WHITE);
+            button.setContentAreaFilled(false);
+            return button;
         }
 
         JLabel createLabel() {
@@ -227,7 +258,7 @@ public final class Screen implements ClockListener {
                 final Rectangle ir = new Rectangle(px + IMAGE_BORDER_SIZE, py + IMAGE_BORDER_SIZE, pw - IMAGE_BORDER_SIZE * 2, ph - IMAGE_BORDER_SIZE * 2);
                 g.setColor(Color.BLACK);
                 g.fillRect(ir.x - IMAGE_BORDER_SIZE / 2, ir.y - IMAGE_BORDER_SIZE / 2, ir.width + IMAGE_BORDER_SIZE, ir.height + IMAGE_BORDER_SIZE);
-                g.setColor(Color.GRAY);
+                g.setColor(this.hasFocus() ? Color.GREEN : Color.GRAY);
                 g.drawRect(ir.x - IMAGE_BORDER_SIZE / 2, ir.y - IMAGE_BORDER_SIZE / 2, ir.width + IMAGE_BORDER_SIZE - 1, ir.height + IMAGE_BORDER_SIZE - 1);
                 g.drawImage(image, ir.x, ir.y, ir.width, ir.height, null);
             }

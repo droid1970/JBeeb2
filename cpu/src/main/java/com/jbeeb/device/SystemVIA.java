@@ -3,12 +3,14 @@ package com.jbeeb.device;
 import com.jbeeb.keymap.ColRow;
 import com.jbeeb.keymap.KeyMap;
 import com.jbeeb.keymap.TargetKey;
+import com.jbeeb.util.StateKey;
 import com.jbeeb.util.SystemStatus;
 
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+@StateKey(key = "systemVIA")
 public class SystemVIA extends VIA {
 
     private final KeyMap keyMap = KeyMap.DEFAULT_KEY_MAP;
@@ -17,8 +19,13 @@ public class SystemVIA extends VIA {
     private final Boolean[][] keyDownShift = new Boolean[16][16];
     private ColRow lastKeyDown = null;
 
+    @StateKey(key = "IC32")
     private int IC32;
+
+    @StateKey(key = "capsLockLight")
     private boolean capslockLight;
+
+    @StateKey(key = "shiftLockLight")
     private boolean shiftlockLight;
 
     public SystemVIA(

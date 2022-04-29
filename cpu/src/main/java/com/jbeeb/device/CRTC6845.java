@@ -1,23 +1,14 @@
 package com.jbeeb.device;
 
-import com.jbeeb.util.InterruptSource;
-import com.jbeeb.util.ClockListener;
-import com.jbeeb.util.SystemStatus;
+import com.jbeeb.util.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@StateKey(key = "crtc6845")
 public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSource, ClockListener {
-
-    private static final boolean TICK_WITH_EXECUTOR = false;
-
-    private final ScheduledExecutorService executor;
-    private final SystemVIA systemVIA;
 
     private static final int VERTICAL_SYNC_FREQUENCY_HZ = 50;
     private static final long VERTICAL_SYNC_CYCLE_COUNT = 2_000_000L / VERTICAL_SYNC_FREQUENCY_HZ;
@@ -25,15 +16,28 @@ public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSou
     private static final long FAST_CURSOR_CYCLE_COUNT = VERTICAL_SYNC_CYCLE_COUNT * 8;
     private static final long SLOW_CURSOR_CYCLE_COUNT = VERTICAL_SYNC_CYCLE_COUNT * 16;
 
-    private int v0;
-
-    private final int[] registers = new int[18];
-    private final AtomicInteger cursorAddress = new AtomicInteger();
+    private final SystemVIA systemVIA;
     private final List<Runnable> vsyncListeners = new ArrayList<>();
 
+    @StateKey(key = "v0")
+    private int v0;
+
+    @StateKey(key = "registers")
+    private final int[] registers = new int[18];
+
+    @StateKey(key = "cursorAddress")
+    private int cursorAddress;
+
+    @StateKey(key = "cycleCount")
     private long cycleCount = 0L;
+
+    @StateKey(key = "cursorOn")
     private boolean cursorOn;
+
+    @StateKey(key = "cursorBlink")
     private boolean cursorBlink;
+
+    @StateKey(key = "cursorToggleCycles")
     private long cursorToggleCycles = FAST_CURSOR_CYCLE_COUNT;
 
     public CRTC6845(
@@ -43,17 +47,30 @@ public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSou
             SystemVIA systemVIA
     ) {
         super(systemStatus, name, startAddress, 8);
-        if (TICK_WITH_EXECUTOR) {
-            this.executor = Executors.newScheduledThreadPool(1, r -> {
-                final Thread t = new Thread(r, "crtc-6845-vsync");
-                t.setDaemon(true);
-                return t;
-            });
-            this.executor.scheduleAtFixedRate(this::verticalSync, 1000L / VERTICAL_SYNC_FREQUENCY_HZ, 1000L / VERTICAL_SYNC_FREQUENCY_HZ, TimeUnit.MILLISECONDS);
-        } else {
-            this.executor = null;
-        }
         this.systemVIA = Objects.requireNonNull(systemVIA);
+    }
+
+    public void populateState(final State state) {
+        final TypedMap map = new TypedMap();
+        map.putInt("v0", v0);
+        map.putIntArray("registers", registers);
+        map.putLong("cycleCount", cycleCount);
+        map.putBoolean("cursorOn", cursorOn);
+        map.putBoolean("cursorBlink", cursorBlink);
+        map.putInt("cursorAddress", cursorAddress);
+        map.putLong("cursorToggleCycles", cursorToggleCycles);
+        state.put("crtc6845", map);
+    }
+
+    public void applyState(final State state) {
+        final TypedMap map = state.get("crtc6845");
+        v0 = map.getInt("v0", 0);
+        final int[] regArray = map.getIntArray("registers");
+        System.arraycopy(regArray, 0, registers, 0, regArray.length);
+        cycleCount = map.getInt("cycleCount", 0);
+        cursorOn = map.getBoolean("cursorOn", false);
+        cursorAddress = map.getInt("cursorAddress", 0);
+        cursorToggleCycles = map.getInt("cursorToggleCycles", 0);
     }
 
     public boolean isCursorOn() {
@@ -62,21 +79,19 @@ public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSou
 
     @Override
     public void tick() {
-        if (!TICK_WITH_EXECUTOR) {
-            if ((cycleCount % cursorToggleCycles) == 0) {
-                cursorOn = !cursorOn;
-            }
-            final long syncCycle = (cycleCount % VERTICAL_SYNC_CYCLE_COUNT);
-            if (syncCycle == 0) {
-                systemVIA.setCA1(true);
-                verticalSync();
-            } else {
-                if (syncCycle == 500) {
-                    systemVIA.setCA1(false);
-                }
-            }
-            cycleCount++;
+        if ((cycleCount % cursorToggleCycles) == 0) {
+            cursorOn = !cursorOn;
         }
+        final long syncCycle = (cycleCount % VERTICAL_SYNC_CYCLE_COUNT);
+        if (syncCycle == 0) {
+            systemVIA.setCA1(true);
+            verticalSync();
+        } else {
+            if (syncCycle == 500) {
+                systemVIA.setCA1(false);
+            }
+        }
+        cycleCount++;
     }
 
     public void addVSyncListener(final Runnable l) {
@@ -138,7 +153,7 @@ public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSou
     }
 
     public int getCursorAddress() {
-        return cursorAddress.get();
+        return cursorAddress;
     }
 
     private int computeCursorAddress() {
@@ -172,7 +187,7 @@ public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSou
             if (!isReadOnly(v0)) {
                 registers[v0] = value & 0xFF;
                 if (v0 == 15) {
-                    cursorAddress.set(computeCursorAddress());
+                    cursorAddress = computeCursorAddress();
                 }
                 if (v0 == 10) {
                     cursorBlink = (value & 0x40) != 0;

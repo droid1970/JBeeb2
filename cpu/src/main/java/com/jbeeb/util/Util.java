@@ -9,10 +9,14 @@ import com.jbeeb.device.VideoULA;
 import com.jbeeb.screen.DisplayMode;
 import com.jbeeb.memory.Memory;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class Util {
 
@@ -240,5 +244,91 @@ public final class Util {
     public static String formatDurationNanosAsMillis(final long nanos) {
         final double secs = (double) nanos / 1_000_000L;
         return DURATION_FORMAT.format(secs);
+    }
+
+    private static void getStateFields(final List<Field> fields, final Class<?> cl) throws Exception {
+        if (cl == Object.class) {
+            return;
+        }
+
+        for (Field f : cl.getDeclaredFields()) {
+            if (f.getAnnotation(StateKey.class) != null) {
+                fields.add(f);
+            }
+        }
+
+        getStateFields(fields, cl.getSuperclass());
+    }
+
+    private static void populateTypeMap(final TypedMap typedMap, final Object obj, final List<Field> fields) throws Exception {
+        for (Field f : fields) {
+            final Annotation a = f.getAnnotation(StateKey.class);
+            if (a != null) {
+                final String key = ((StateKey) a).key();
+                f.setAccessible(true);
+                final Class<?> type = f.getType();
+                final Object value = f.get(obj);
+                if (type == int.class) {
+                    typedMap.putInt(key, (int) value);
+                } else if (type == long.class) {
+                    typedMap.putLong(key, (long) value);
+                } else if (type == boolean.class) {
+                    typedMap.putBoolean(key, (boolean) value);
+                } else if (type == int[].class) {
+                    typedMap.putIntArray(key, (int[]) value);
+                } else if (type == double.class) {
+                    typedMap.putDouble(key, (double) value);
+                } else if (type == String.class) {
+                    typedMap.putString(key, (String) value);
+                }
+            }
+        }
+    }
+
+    public static void populateState(final State state, Object obj) throws Exception {
+        final Class<?> cl = obj.getClass();
+        if (cl.getAnnotation(StateKey.class) != null) {
+            final String key = ((StateKey) cl.getAnnotation(StateKey.class)).key();
+            final List<Field> fields = new ArrayList<>();
+            getStateFields(fields, cl);
+            final TypedMap typedMap = new TypedMap();
+            if (!fields.isEmpty()) {
+                populateTypeMap(typedMap, obj, fields);
+            }
+            state.put(key, typedMap);
+        }
+        int x = 1;
+    }
+
+    public static void applyState(final State state, final Object obj) throws Exception {
+        final Class<?> cl = obj.getClass();
+        if (cl.getAnnotation(StateKey.class) != null) {
+            final String key = ((StateKey) cl.getAnnotation(StateKey.class)).key();
+            final TypedMap typedMap = state.get(key);
+            if (typedMap != null) {
+                final List<Field> fields = new ArrayList<>();
+                getStateFields(fields, cl);
+                for (Field f : fields) {
+                    f.setAccessible(true);
+                    final String fieldKey = f.getAnnotation(StateKey.class).key();
+                    if (typedMap.containsKey(fieldKey)) {
+                        final Class<?> type = f.getType();
+                        if (type == int.class) {
+                            f.set(obj, typedMap.getInt(fieldKey, 0));
+                        } else if (type == long.class) {
+                            f.set(obj, typedMap.getLong(fieldKey, 0));
+                        } else if (type == boolean.class) {
+                            f.set(obj, typedMap.getBoolean(fieldKey, false));
+                        } else if (type == double.class) {
+                            f.set(obj, typedMap.getDouble(fieldKey, 0));
+                        } else if (type == String.class) {
+                            f.set(obj, typedMap.getString(fieldKey, ""));
+                        } else if (type == int[].class) {
+                            f.set(obj, typedMap.getIntArray(fieldKey));
+                        }
+                    }
+                }
+            }
+        }
     }
 }

@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
+@StateKey(key = "cpu6502")
 public final class Cpu implements Device, ClockListener, Runnable, StatusProducer {
 
     private static final boolean USE_QUEUE = true;
@@ -33,18 +34,35 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     private final Disassembler disassembler;
 
     private InterruptSource interruptSource;
-
-    private final Map<Integer, Intercept> intercepts = new HashMap<>();
+    private Runnable saveStateCallback;
 
     //
     // State
     //
+
+    @StateKey(key = "A")
     private int a;
+
+    @StateKey(key = "X")
     private int x;
+
+    @StateKey(key = "Y")
     private int y;
+
+    @StateKey(key = "pc")
     private int pc;
+
+    @StateKey(key = "sp")
     private int sp = 0xFF;
+
+    @StateKey(key = "flags")
     private int flags;
+
+    @StateKey(key = "servicingInterrupt")
+    private boolean servicingInterrupt;
+
+    @StateKey(key = "inISR")
+    private boolean inISR;
 
     //
     // Temporary registers
@@ -135,9 +153,6 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
         }
     }
 
-    private boolean servicingInterrupt;
-    private boolean inISR;
-
     public boolean isInISR() {
         return inISR;
     }
@@ -168,11 +183,22 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
         });
     }
 
+    public void setQuiescentCallback(Runnable callback) {
+        this.saveStateCallback = callback;
+    }
+
     @Override
     public void tick() {
         pcDis = pc;
         if (queue.isEmpty()) {
             if (!servicingInterrupt) {
+
+                // We are quiescent here
+                if (saveStateCallback != null) {
+                    saveStateCallback.run();
+                    saveStateCallback = null;
+                }
+
                 // Check interrupt status
                 if (isNMI()) {
                     serviceNMI();
