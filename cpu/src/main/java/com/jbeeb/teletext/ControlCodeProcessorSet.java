@@ -29,7 +29,6 @@ final class ControlCodeProcessorSet extends AbstractCellProcessorSet {
         register(133, s -> s.enableText(MAGENTA));
         register(134, s -> s.enableText(CYAN));
         register(135, s -> s.enableText(WHITE));
-        register(136, s -> s.enableText(RED));
 
         //
         // Flashing

@@ -129,22 +129,25 @@ final class TeletextAlphaDefinition {
         return TOP_MARGIN2 + y * Y_SCALE2;
     }
 
-    public static BufferedImage createCharacterImage(final AlphaDefinition p, final Color colour) {
+    public static BufferedImage createCharacterImage(final AlphaDefinition p, final Color colour, final boolean doubleHeight) {
         final Path2D.Double path = p.toPath(px -> tX2(px), py -> tY2(py));
-        return createPathImage(path, 1, colour);
+        final int xscale = 1;
+        final int yscale = (doubleHeight) ? 2 : 1;
+        final float strokeSize = (doubleHeight) ? 3.0f : 2.0f;
+        return createPathImage(path, xscale, yscale, colour, strokeSize);
     }
 
-    private static BufferedImage createPathImage(final Path2D.Double path, final int scale, final Color colour) {
-        final int iw = scale * TeletextConstants.TELETEXT_CHAR_WIDTH;
-        final int ih = scale * TeletextConstants.TELETEXT_CHAR_HEIGHT;
+    private static BufferedImage createPathImage(final Path2D.Double path, final int xscale, final int yscale, final Color colour, final float strokeSize) {
+        final int iw = xscale * TeletextConstants.TELETEXT_CHAR_WIDTH;
+        final int ih = yscale * TeletextConstants.TELETEXT_CHAR_HEIGHT;
         final BufferedImage charImage = new BufferedImage(iw, ih, BufferedImage.TYPE_INT_ARGB);
         final Graphics2D g = charImage.createGraphics();
         final Path2D.Double scaledPath = new Path2D.Double(path);
         final AffineTransform transform = new AffineTransform();
-        transform.scale(scale, scale);
+        transform.scale(xscale, yscale);
         scaledPath.transform(transform);
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g.setStroke(new BasicStroke(scale * 2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g.setStroke(new BasicStroke(strokeSize, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g.setColor(colour);
         g.draw(scaledPath);
         return charImage;

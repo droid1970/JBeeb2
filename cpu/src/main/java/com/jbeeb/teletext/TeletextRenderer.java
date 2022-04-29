@@ -24,6 +24,8 @@ final class TeletextRenderer {
     private boolean conceal;
     private boolean contiguousGraphics;
     private boolean holdGraphics;
+    private boolean textShowing = true;
+    private boolean bottom = true;
 
     public TeletextRenderer() {
         resetToDefaults();
@@ -86,6 +88,11 @@ final class TeletextRenderer {
 
     public void setDoubleHeight(final boolean doubleHeight) {
         this.doubleHeight = doubleHeight;
+        if (doubleHeight) {
+            bottom = !bottom;
+        } else {
+            bottom = false;
+        }
     }
 
     public void concealDisplay() {
@@ -106,5 +113,29 @@ final class TeletextRenderer {
 
     public void setHoldGraphics(boolean holdGraphics) {
         this.holdGraphics = holdGraphics;
+    }
+
+    public boolean isTextSteady() {
+        return !flashing;
+    }
+
+    public boolean isTextShowing() {
+        return textShowing;
+    }
+
+    public void setTextShowing(final boolean textShowing) {
+        this.textShowing = textShowing;
+    }
+
+    public boolean isDoubleHeight() {
+        return doubleHeight;
+    }
+
+    public boolean isBottom() {
+        return bottom;
+    }
+
+    public void setBottom(boolean bottom) {
+        this.bottom = bottom;
     }
 }

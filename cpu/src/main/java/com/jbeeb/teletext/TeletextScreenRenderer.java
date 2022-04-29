@@ -11,6 +11,9 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 import static com.jbeeb.teletext.TeletextConstants.TELETEXT_CHAR_HEIGHT;
 import static com.jbeeb.teletext.TeletextConstants.TELETEXT_CHAR_WIDTH;
@@ -21,6 +24,14 @@ public final class TeletextScreenRenderer extends AbstractScreenRenderer {
 
     public TeletextScreenRenderer(Memory memory, SystemVIA systemVIA, CRTC6845 crtc6845, VideoULA videoULA) {
         super(memory, systemVIA, crtc6845, videoULA);
+        final Timer flashTimer = new Timer("teletext-flasher", true);
+        final TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                renderer.setTextShowing(!renderer.isTextShowing());
+            }
+        };
+        flashTimer.scheduleAtFixedRate(task, 1000L, 1000L);
     }
 
     @Override
@@ -46,6 +57,8 @@ public final class TeletextScreenRenderer extends AbstractScreenRenderer {
     @Override
     public void refreshWholeImage(DisplayMode mode, BufferedImage img) {
         final Graphics2D g = img.createGraphics();
+
+        renderer.setBottom(true);
 
         final int leftMargin = (img.getWidth() - (TELETEXT_CHAR_WIDTH * 40)) / 2;
 
