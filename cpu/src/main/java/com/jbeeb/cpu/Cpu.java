@@ -5,8 +5,6 @@ import com.jbeeb.util.*;
 import com.jbeeb.assembler.Disassembler;
 import com.jbeeb.memory.Memory;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -210,6 +208,9 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
             }
 
             fetch();
+            if (verboseSupplier.getAsBoolean()) {
+                System.err.println(this);
+            }
             cycleCount.incrementAndGet();
         } else {
             instructionDis = "";
@@ -234,10 +235,14 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     }
 
     private void fetch() {
+        if (verboseSupplier.getAsBoolean()) {
+            instructionDis = disassembler.disassemble(pc);
+        }
         final int opcode = readFromAndIncrementPC();
         final InstructionKey key = instructionSet.decode(opcode);
         this.instruction = key.getInstruction();
         this.addressMode = key.getAddressMode();
+
         execute();
     }
 
@@ -832,6 +837,10 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
 
     private void incPC() {
         pc++;
+    }
+
+    public void setPC(final int pc) {
+        this.pc = pc;
     }
 
     private int getPCL() {

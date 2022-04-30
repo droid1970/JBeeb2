@@ -429,7 +429,8 @@ public class VIA extends AbstractMemoryMappedDevice implements ClockListener, In
             case IFR:
                 return ifr;
             default:
-                throw new IllegalStateException(index + ": register index uot of bounds");
+                return 0;
+                //throw new IllegalStateException(index + ": register index uot of bounds");
         }
     }
 
@@ -481,8 +482,6 @@ public class VIA extends AbstractMemoryMappedDevice implements ClockListener, In
         boolean pcrSet = (pcr & 4) != 0;
         if (pcrSet == level) {
             ifr |= INT_CA2;
-            //Util.log("CA2 interrupt", 0);
-            //System.err.println("CA2 interrupt");
             updateIFR();
         }
     }

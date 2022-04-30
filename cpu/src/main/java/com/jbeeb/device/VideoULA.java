@@ -3,6 +3,7 @@ package com.jbeeb.device;
 import com.jbeeb.util.InterruptSource;
 import com.jbeeb.util.StateKey;
 import com.jbeeb.util.SystemStatus;
+import com.jbeeb.util.Util;
 
 import java.awt.*;
 
@@ -51,8 +52,35 @@ public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSou
             0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
     };
 
+    private final CursorDetails cursor = new CursorDetails();
+
     public VideoULA(final SystemStatus systemStatus, final String name, final int startAddress) {
         super(systemStatus, name, startAddress, 8);
+    }
+
+    private static final class CursorDetails {
+        int masterCursorSize;
+        int cursorWidthBytes;
+
+        void setMasterCursorSize(final int n) {
+            if (masterCursorSize != n) {
+                masterCursorSize = n;
+            }
+        }
+
+        void setCursorWidthBytes(final int n) {
+            if (cursorWidthBytes != n) {
+                cursorWidthBytes = n;
+            }
+        }
+
+        public String toString() {
+            return "masterCursorSize = " + masterCursorSize + " cursorWidthBytes = " + cursorWidthBytes;
+        }
+    }
+
+    public boolean isCursorEnabled() {
+        return masterCursorSize > 0 || cursorWidthBbytes > 0;
     }
 
     @Override
@@ -98,8 +126,10 @@ public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSou
         index = index & 1;
         if (index == 0) {
             this.masterCursorSize = (value >>> 7) & 0x01;
+            cursor.setMasterCursorSize(masterCursorSize);
             this.teletext = (value & 0x02) >>> 1;
             this.cursorWidthBbytes = (value >>> 5) & 0x03;
+            cursor.setCursorWidthBytes(cursorWidthBbytes);
             this.clockRate = (value >>> 4) & 0x01;
             this.charactersPerLine = (value >>> 2) & 0x03;
             this.flashIndex = value & 0x01;
@@ -108,6 +138,9 @@ public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSou
             final int actualColour = (value & 0x0F);
             palette[logicalIndex] = actualColour ^ 0x7;
         }
+//        System.err.println("videoULA: register " + index + " = " + Util.formatHexByte(value & 0xfe));
+//        System.err.println("76543210");
+//        System.err.println(Util.pad0(Integer.toBinaryString(value), 8));
     }
 
     public Color getPhysicalColor(int logicalColorIndex, final int bitsPerPixel) {

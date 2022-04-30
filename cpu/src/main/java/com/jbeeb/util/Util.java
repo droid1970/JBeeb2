@@ -9,6 +9,7 @@ import com.jbeeb.device.VideoULA;
 import com.jbeeb.screen.DisplayMode;
 import com.jbeeb.memory.Memory;
 
+import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.text.DecimalFormat;
@@ -124,6 +125,95 @@ public final class Util {
         cpu.setFlag(Flag.OVERFLOW, ((a ^ result) & (b ^ result) & 0x80) != 0);
         return result & 0xFF;
     }
+
+    public static int addWithCarryBCD(final Cpu cpu, final int a, final int addend, final boolean carryIn) {
+        int ah = 0;
+        int tempb = (a + addend + (carryIn ? 1 : 0)) & 0xFF;
+        cpu.setFlag(Flag.ZERO, tempb == 0);
+        int al = (a & 0xF) + (addend & 0xF) + (carryIn ? 1 : 0);
+        if (al > 9) {
+            al -= 10;
+            al &= 0xF;
+            ah = 1;
+        }
+        ah += (a >>> 4) + (addend >>> 4);
+        cpu.setFlag(Flag.NEGATIVE, ((ah & 8) != 0));
+        cpu.setFlag(Flag.OVERFLOW, ((a ^ addend) & 0x80) != 0 && (((a ^ (ah << 4)) & 0x80) != 0));
+        cpu.setFlag(Flag.CARRY, false);
+        if (ah > 9) {
+            cpu.setFlag(Flag.CARRY, true);
+            ah -= 10;
+            ah &= 0xFF;
+        }
+
+        return ((al & 0xF) | (ah << 4)) & 0xFF;
+    }
+
+//    // For flags and stuff see URLs like:
+//    // http://www.visual6502.org/JSSim/expert.html?graphics=false&a=0&d=a900f86911eaeaea&steps=16
+//    function adcBCD(addend) {
+//        var ah = 0;
+//        var tempb = (cpu.a + addend + (cpu.p.c ? 1 : 0)) & 0xff;
+//        cpu.p.z = !tempb;
+//        var al = (cpu.a & 0xf) + (addend & 0xf) + (cpu.p.c ? 1 : 0);
+//        if (al > 9) {
+//            al -= 10;
+//            al &= 0xf;
+//            ah = 1;
+//        }
+//        ah += (cpu.a >>> 4) + (addend >>> 4);
+//        cpu.p.n = !!(ah & 8);
+//        cpu.p.v = !((cpu.a ^ addend) & 0x80) && !!((cpu.a ^ (ah << 4)) & 0x80);
+//        cpu.p.c = false;
+//        if (ah > 9) {
+//            cpu.p.c = true;
+//            ah -= 10;
+//            ah &= 0xf;
+//        }
+//        cpu.a = ((al & 0xf) | (ah << 4)) & 0xff;
+//    }
+//
+
+    public static int subtractWithCarryBCD(final Cpu cpu, final int a, final int subend, final boolean carryIn) {
+        int carry = (carryIn) ? 0 : 1;
+        int al = (a & 0xF) - (subend & 0xF) - carry;
+        int ah = (a >>> 4) - (subend >>> 4);
+        if ((al & 0x10) != 0) {
+            al = (al - 6) & 0xf;
+            ah--;
+        }
+        if ((ah & 0x10) != 0) {
+            ah = (ah - 6) & 0xF;
+        }
+
+        int result = a - subend - carry;
+        cpu.setFlag(Flag.NEGATIVE, (result & 0x80) != 0);
+        cpu.setFlag(Flag.ZERO, (result & 0xFF) == 0);
+        cpu.setFlag(Flag.OVERFLOW, (((a ^ result) & (subend ^ a) ^ 0x80)) != 0);
+        cpu.setFlag(Flag.CARRY, (result & 0x100) == 0);
+        return al | (ah << 4);
+    }
+//    // With reference to c64doc: http://vice-emu.sourceforge.net/plain/64doc.txt
+//    // and http://www.visual6502.org/JSSim/expert.html?graphics=false&a=0&d=a900f8e988eaeaea&steps=18
+//    function sbcBCD(subend) {
+//        var carry = cpu.p.c ? 0 : 1;
+//        var al = (cpu.a & 0xf) - (subend & 0xf) - carry;
+//        var ah = (cpu.a >>> 4) - (subend >>> 4);
+//        if (al & 0x10) {
+//            al = (al - 6) & 0xf;
+//            ah--;
+//        }
+//        if (ah & 0x10) {
+//            ah = (ah - 6) & 0xf;
+//        }
+//
+//        var result = cpu.a - subend - carry;
+//        cpu.p.n = !!(result & 0x80);
+//        cpu.p.z = !(result & 0xff);
+//        cpu.p.v = !!((cpu.a ^ result) & (subend ^ cpu.a) & 0x80);
+//        cpu.p.c = !(result & 0x100);
+//        cpu.a = al | (ah << 4);
+//    }
 
     public static int subtractWithCarry(final Cpu cpu, final int a, final int b, final boolean carryIn) {
         return addWithCarry(cpu, a, Util.onesComplement(b), carryIn);
@@ -329,6 +419,67 @@ public final class Util {
                     }
                 }
             }
+        }
+    }
+
+    public static void run(final Cpu cpu, final Memory memory, final File file, final int loadAddress, final int execAddress) throws IOException {
+        if (file.exists()) {
+            final int[] data = readFile(file);
+            for (int i = 0; i < data.length; i++) {
+                memory.writeByte(loadAddress + i, data[i]);
+            }
+            cpu.setQuiescentCallback(() -> {
+                cpu.setPC(execAddress);
+            });
+        }
+    }
+
+    public static void load(final Cpu cpu, final Memory memory, final File file, final int loadAddress) throws IOException {
+        if (file.exists()) {
+            final int[] data = readFile(file);
+            for (int i = 0; i < data.length; i++) {
+                memory.writeByte(loadAddress + i, data[i]);
+            }
+        }
+    }
+
+    public static int[] readFile(final File file) throws IOException {
+        final long size = file.length();
+        final int[] ret = new int[(int) size];
+        try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))) {
+            int i = 0;
+            while (true) {
+                final int b = in.read();
+                if (b < 0) {
+                    break;
+                }
+                ret[i] = b & 0xFF;
+                i++;
+            }
+        }
+        return ret;
+    }
+
+    private static FileMetadata readMetadata(final File file) throws IOException {
+        final int[] data = readFile(file);
+        for (int i = 0; i < data.length; i++) {
+            final int b = data[i];
+            System.err.println("b = " + b + " / " + Util.formatHexByte(b) + " / " + ((char) b));
+        }
+        int x = 1;
+        return null;
+    }
+
+    private static final class FileMetadata {
+
+        final String name;
+        final int loadAddress;
+        final int execAddress;
+
+        public FileMetadata(String name, int loadAddress, int execAddress) {
+            this.name = name;
+            this.loadAddress = loadAddress;
+            this.execAddress = execAddress;
         }
     }
 }

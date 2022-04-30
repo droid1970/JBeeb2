@@ -44,6 +44,10 @@ public final class BBCMicro implements InterruptSource {
         return cpu;
     }
 
+    public Memory getRam() {
+        return ram;
+    }
+
     public BBCMicro() throws Exception {
 
         this.systemStatus = new SystemStatusImpl();
@@ -104,17 +108,13 @@ public final class BBCMicro implements InterruptSource {
         this.runner = new Runner(
                 2_000_000,
                 Long.MAX_VALUE,
-                Arrays.asList(cpu, systemVIA, crtc6845, screen)
+                Arrays.asList(cpu, systemVIA, userVIA, crtc6845, screen)
         );
         addInterruptSource(crtc6845);
         addInterruptSource(systemVIA);
         addInterruptSource(userVIA);
         addInterruptSource(videoULA);
         cpu.setInterruptSource(this);
-
-        cpu.setQuiescentCallback(() -> {
-            System.err.println("quiescent");
-        });
     }
 
     private State savedState;
@@ -190,7 +190,6 @@ public final class BBCMicro implements InterruptSource {
     public boolean isIRQ() {
         for (InterruptSource s : interruptSources) {
             if (s.isIRQ()) {
-                s.isIRQ();
                 return true;
             }
         }

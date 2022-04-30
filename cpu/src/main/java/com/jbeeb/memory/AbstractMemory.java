@@ -51,6 +51,7 @@ public abstract class AbstractMemory implements Memory {
     }
 
     private void checkWriteable() {
+        if (true) return;
         if (readOnly) {
             throw new IllegalStateException("memory is read-only");
         }

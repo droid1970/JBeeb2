@@ -40,7 +40,7 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
 
         startAddress = crtc6845.getScreenStartAddress() * 8;
         cursorAddress = wrapAddress(mode.getMemoryLocation(), crtc6845.getCursorAddress() * 8);
-        cursorOn = crtc6845.isCursorOn();
+        cursorOn = crtc6845.isCursorOn() && videoULA.isCursorEnabled() && crtc6845.isCursorEnabled();
         baseAddress = mode.getMemoryLocation();
         charsPerLine = mode.getPhysicalCharsPerLine();
         fastClock = videoULA.isFastClockRate();
@@ -107,13 +107,6 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
         if (this.verticalAdjust != verticalAdjust) {
             this.verticalAdjust = verticalAdjust;
             changed = true;
-        }
-
-        if (changed) {
-            System.err.println("hdisp = " + horizontalDisplayed + " vdisp = " + verticalDisplayed);
-            System.err.println("htotal = " + horizontalTotal + " vtotal = " + verticalTotal + " vedj = " + verticalAdjust);
-            System.err.println("total clocks = " + (horizontalTotal * (verticalTotal * 8) + verticalAdjust));
-            System.err.println("fast clock = " + videoULA.isFastClockRate());
         }
     }
 

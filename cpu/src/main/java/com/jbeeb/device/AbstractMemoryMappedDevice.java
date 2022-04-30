@@ -3,6 +3,7 @@ package com.jbeeb.device;
 import com.jbeeb.util.StateKey;
 import com.jbeeb.util.StatusProducer;
 import com.jbeeb.util.SystemStatus;
+import com.jbeeb.util.Util;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -16,6 +17,8 @@ public abstract class AbstractMemoryMappedDevice implements MemoryMappedDevice, 
 
     private final int startAddress;
     private final int endAddress;
+
+    protected boolean verbose;
 
     public AbstractMemoryMappedDevice(final SystemStatus systemStatus, final String name, final int startAddress, final int size) {
         this.systemStatus = Objects.requireNonNull(systemStatus);
@@ -47,11 +50,18 @@ public abstract class AbstractMemoryMappedDevice implements MemoryMappedDevice, 
 
     @Override
     public final int readByte(int address) {
-        return readRegister(address - startAddress) & 0xFF;
+        final int ret = readRegister(address - startAddress) & 0xFF;
+        if (verbose) {
+            Util.log(getName() + ": read register " + Util.formatHexByte(address) + " = " + ret, 0);
+        }
+        return ret;
     }
 
     @Override
     public final void writeByte(int address, int value) {
+        if (verbose) {
+            Util.log(getName() + ": write register " + Util.formatHexByte(address) + " = " + value, 0);
+        }
         writeRegister(address - startAddress, value & 0xFF);
     }
 

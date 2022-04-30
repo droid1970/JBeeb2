@@ -14,6 +14,7 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.event.*;
 import java.io.IOException;
 import java.util.*;
 
@@ -21,8 +22,6 @@ import javax.swing.*;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -136,6 +135,7 @@ public final class Screen implements ClockListener {
 
         final JLabel mhzLabel;
         final JLabel screenLabel;
+        boolean verbose = false;
 
         StatusBar() {
             setOpaque(true);
@@ -159,6 +159,17 @@ public final class Screen implements ClockListener {
 
             add(Box.createRigidArea(new Dimension(4, 0)));
 
+
+            final JCheckBox verboseCheckbox = createCheckbox("verbose");
+            verboseCheckbox.addActionListener(e -> {
+                verbose = !verbose;
+                bbc.getCpu().setVerboseSupplier(verbose ? () -> true : () -> false);
+            });
+            add(verboseCheckbox);
+
+            add(Box.createRigidArea(new Dimension(4, 0)));
+
+
             mhzLabel = createLabel();
             add(mhzLabel);
 
@@ -173,6 +184,14 @@ public final class Screen implements ClockListener {
 
         JButton createButton(final String text) {
             final JButton button = new JButton(text);
+            button.setFocusable(false);
+            button.setForeground(Color.WHITE);
+            button.setContentAreaFilled(false);
+            return button;
+        }
+
+        JCheckBox createCheckbox(final String text) {
+            final JCheckBox button = new JCheckBox(text);
             button.setFocusable(false);
             button.setForeground(Color.WHITE);
             button.setContentAreaFilled(false);
@@ -206,11 +225,49 @@ public final class Screen implements ClockListener {
     private DisplayMode currentMode;
 
     private final class ImageComponent extends JComponent {
+
+        private Timer disableCursorTimer;
+
         public ImageComponent() {
             setOpaque(false);
             setBackground(Color.BLACK);
             setPreferredSize(new Dimension(IMAGE_WIDTH + IMAGE_BORDER_SIZE * 2, IMAGE_HEIGHT + IMAGE_BORDER_SIZE * 2));
             addKeyListener(new KeyHandler());
+            disableCursor();
+            addMouseMotionListener(new MouseAdapter() {
+                @Override
+                public void mouseMoved(MouseEvent e) {
+                    enableCursor(2000);
+                }
+            });
+        }
+
+        void enableCursor(final int enableTime) {
+            setCursor(Cursor.getDefaultCursor());
+            startDisableCursorTimer(enableTime);
+        }
+
+        void stopDisableCursorTimer() {
+            if (disableCursorTimer != null) {
+                disableCursorTimer.stop();
+                disableCursorTimer = null;
+            }
+        }
+        void startDisableCursorTimer(final int delay) {
+            stopDisableCursorTimer();
+            disableCursorTimer = new Timer(delay, e -> {
+                disableCursor();
+            });
+            disableCursorTimer.setRepeats(false);
+            disableCursorTimer.start();
+        }
+
+        void disableCursor() {
+            setCursor( getToolkit().createCustomCursor(
+                    new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB),
+                    new Point(),
+                    null)
+            );
         }
 
         @Override
@@ -258,7 +315,7 @@ public final class Screen implements ClockListener {
                 final Rectangle ir = new Rectangle(px + IMAGE_BORDER_SIZE, py + IMAGE_BORDER_SIZE, pw - IMAGE_BORDER_SIZE * 2, ph - IMAGE_BORDER_SIZE * 2);
                 g.setColor(Color.BLACK);
                 g.fillRect(ir.x - IMAGE_BORDER_SIZE / 2, ir.y - IMAGE_BORDER_SIZE / 2, ir.width + IMAGE_BORDER_SIZE, ir.height + IMAGE_BORDER_SIZE);
-                g.setColor(this.hasFocus() ? Color.GREEN : Color.GRAY);
+                g.setColor(this.hasFocus() ? Color.GRAY : Color.DARK_GRAY);
                 g.drawRect(ir.x - IMAGE_BORDER_SIZE / 2, ir.y - IMAGE_BORDER_SIZE / 2, ir.width + IMAGE_BORDER_SIZE - 1, ir.height + IMAGE_BORDER_SIZE - 1);
                 g.drawImage(image, ir.x, ir.y, ir.width, ir.height, null);
             }

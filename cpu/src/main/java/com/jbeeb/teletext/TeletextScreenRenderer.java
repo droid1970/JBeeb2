@@ -76,7 +76,7 @@ public final class TeletextScreenRenderer extends AbstractScreenRenderer {
             renderer.resetToDefaults();
 
             for (int x = leftMargin; x < (TELETEXT_CHAR_WIDTH * 40 + leftMargin); x += TELETEXT_CHAR_WIDTH) {
-                if (crtc6845.isCursorOn() && address == cursorAddress) {
+                if (crtc6845.isCursorEnabled() && crtc6845.isCursorOn() && videoULA.isCursorEnabled() && address == cursorAddress) {
                     cursorRect = new Rectangle(x, y, TELETEXT_CHAR_WIDTH, TELETEXT_CHAR_HEIGHT);
                 }
                 renderer.paintCell(g, memory.readByte(address), x, y, TELETEXT_CHAR_WIDTH, TELETEXT_CHAR_HEIGHT);

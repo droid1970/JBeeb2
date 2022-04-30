@@ -8,7 +8,9 @@ public enum Instruction {
         public void acceptValue(final Cpu cpu, final int value) {
             final int a1 = cpu.getA();
             final int a2 = value;
-            final int result = Util.addWithCarry(cpu, a1, a2, cpu.isFlagSet(Flag.CARRY));
+            final int result = cpu.isFlagSet(Flag.DECIMAL) ?
+                    Util.addWithCarryBCD(cpu, a1, a2, cpu.isFlagSet(Flag.CARRY)) :
+                    Util.addWithCarry(cpu, a1, a2, cpu.isFlagSet(Flag.CARRY));
             cpu.setA(result, true);
         }
     },
@@ -236,7 +238,9 @@ public enum Instruction {
         public void acceptValue(final Cpu cpu, final int value) {
             final int a1 = cpu.getA();
             final int a2 = value;
-            final int result = Util.subtractWithCarry(cpu, a1, a2, cpu.isFlagSet(Flag.CARRY));
+            final int result = cpu.isFlagSet(Flag.DECIMAL) ?
+                    Util.subtractWithCarryBCD(cpu, a1, a2, cpu.isFlagSet(Flag.CARRY)) :
+                    Util.subtractWithCarry(cpu, a1, a2, cpu.isFlagSet(Flag.CARRY));
             cpu.setA(result, true);
         }
     },
