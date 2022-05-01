@@ -4,11 +4,9 @@ import com.jbeeb.assembler.Assembler;
 import com.jbeeb.cpu.Cpu;
 import com.jbeeb.cpu.Flag;
 import com.jbeeb.cpu.InstructionSet;
-import com.jbeeb.device.CRTC6845;
-import com.jbeeb.device.VideoULA;
-import com.jbeeb.screen.DisplayMode;
 import com.jbeeb.memory.Memory;
 
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -149,31 +147,6 @@ public final class Util {
         return ((al & 0xF) | (ah << 4)) & 0xFF;
     }
 
-//    // For flags and stuff see URLs like:
-//    // http://www.visual6502.org/JSSim/expert.html?graphics=false&a=0&d=a900f86911eaeaea&steps=16
-//    function adcBCD(addend) {
-//        var ah = 0;
-//        var tempb = (cpu.a + addend + (cpu.p.c ? 1 : 0)) & 0xff;
-//        cpu.p.z = !tempb;
-//        var al = (cpu.a & 0xf) + (addend & 0xf) + (cpu.p.c ? 1 : 0);
-//        if (al > 9) {
-//            al -= 10;
-//            al &= 0xf;
-//            ah = 1;
-//        }
-//        ah += (cpu.a >>> 4) + (addend >>> 4);
-//        cpu.p.n = !!(ah & 8);
-//        cpu.p.v = !((cpu.a ^ addend) & 0x80) && !!((cpu.a ^ (ah << 4)) & 0x80);
-//        cpu.p.c = false;
-//        if (ah > 9) {
-//            cpu.p.c = true;
-//            ah -= 10;
-//            ah &= 0xf;
-//        }
-//        cpu.a = ((al & 0xf) | (ah << 4)) & 0xff;
-//    }
-//
-
     public static int subtractWithCarryBCD(final Cpu cpu, final int a, final int subend, final boolean carryIn) {
         int carry = (carryIn) ? 0 : 1;
         int al = (a & 0xF) - (subend & 0xF) - carry;
@@ -252,28 +225,29 @@ public final class Util {
         return cpu;
     }
 
-    public static DisplayMode inferDisplayMode(final VideoULA videoULA, final CRTC6845 crtc6845) {
-        if (videoULA.isTeletext()) {
-            return DisplayMode.MODE7;
-        }
-
-        final int horizontalChars = videoULA.getCharactersPerLine();
-        final int verticalChars = crtc6845.getVerticalDisplayedChars();
-
-        if (horizontalChars == 20) {
-            return videoULA.isFastClockRate() ? DisplayMode.MODE2 : DisplayMode.MODE5;
-        } else if (horizontalChars == 40) {
-            if (videoULA.isFastClockRate()) {
-                return DisplayMode.MODE1;
-            } else {
-                return (verticalChars == 32) ? DisplayMode.MODE4 : DisplayMode.MODE6;
-            }
-        } else if (horizontalChars == 80) {
-            return (verticalChars == 32) ? DisplayMode.MODE0 : DisplayMode.MODE3;
-        } else {
-            return null;
-        }
-    }
+//    public static DisplayMode inferDisplayMode(final VideoULA videoULA, final CRTC6845 crtc6845) {
+//        if (videoULA.isTeletext()) {
+//            return DisplayMode.MODE7;
+//        }
+//
+//        videoULA.isTeletext();
+//        final int horizontalChars = videoULA.getCharactersPerLine();
+//        final int verticalChars = crtc6845.getVerticalDisplayedChars();
+//
+//        if (horizontalChars == 20) {
+//            return videoULA.isFastClockRate() ? DisplayMode.MODE2 : DisplayMode.MODE5;
+//        } else if (horizontalChars == 40) {
+//            if (videoULA.isFastClockRate()) {
+//                return DisplayMode.MODE1;
+//            } else {
+//                return (verticalChars == 32) ? DisplayMode.MODE4 : DisplayMode.MODE6;
+//            }
+//        } else if (horizontalChars == 80) {
+//            return (verticalChars == 32) ? DisplayMode.MODE0 : DisplayMode.MODE3;
+//        } else {
+//            return null;
+//        }
+//    }
 
     public static String formatHexByte(final int n) {
         String s = Integer.toHexString(n);
@@ -480,6 +454,22 @@ public final class Util {
             this.name = name;
             this.loadAddress = loadAddress;
             this.execAddress = execAddress;
+        }
+    }
+
+    public static void fillRect(final BufferedImage img, final int rgb, final int x, final int y, final int width, final int height) {
+        for (int rx = x; rx < x + width; rx++) {
+            for (int ry = y; ry < y + height; ry++) {
+                img.setRGB(rx, ry, rgb);
+            }
+        }
+    }
+
+    public static void fillRectXOR(final BufferedImage img, final int rgb, final int x, final int y, final int width, final int height) {
+        for (int rx = x; rx < x + width; rx++) {
+            for (int ry = y; ry < y + height; ry++) {
+                img.setRGB(rx, ry, ((img.getRGB(rx, ry) & 0xFFFFFF) ^ (rgb & 0xFFFFFF)) | 0xFF000000);
+            }
         }
     }
 }

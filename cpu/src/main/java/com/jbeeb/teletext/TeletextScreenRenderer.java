@@ -4,7 +4,6 @@ import com.jbeeb.device.CRTC6845;
 import com.jbeeb.device.SystemVIA;
 import com.jbeeb.device.VideoULA;
 import com.jbeeb.screen.AbstractScreenRenderer;
-import com.jbeeb.screen.DisplayMode;
 import com.jbeeb.memory.Memory;
 
 import java.awt.Color;
@@ -13,7 +12,6 @@ import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.TimeUnit;
 
 import static com.jbeeb.teletext.TeletextConstants.TELETEXT_CHAR_HEIGHT;
 import static com.jbeeb.teletext.TeletextConstants.TELETEXT_CHAR_WIDTH;
@@ -40,7 +38,7 @@ public final class TeletextScreenRenderer extends AbstractScreenRenderer {
     }
 
     @Override
-    public void tick(DisplayMode mode, BufferedImage image) {
+    public void tick(BufferedImage image) {
         throw new UnsupportedOperationException();
     }
 
@@ -50,12 +48,12 @@ public final class TeletextScreenRenderer extends AbstractScreenRenderer {
     }
 
     @Override
-    public void vsync(DisplayMode mode) {
+    public void vsync() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void refreshWholeImage(DisplayMode mode, BufferedImage img) {
+    public void refreshWholeImage(BufferedImage img) {
         final Graphics2D g = img.createGraphics();
 
         renderer.setBottom(true);

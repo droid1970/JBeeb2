@@ -5,7 +5,6 @@ import com.jbeeb.util.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @StateKey(key = "crtc6845")
 public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSource, ClockListener {
@@ -25,22 +24,8 @@ public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSou
     @StateKey(key = "registers")
     private final int[] registers = new int[18];
 
-    @StateKey(key = "cursorAddress")
-    private int cursorAddress;
-
-    @StateKey(key = "cycleCount")
-    private long cycleCount = 0L;
-
-    @StateKey(key = "cursorOn")
+    private long cycleCount;
     private boolean cursorOn;
-
-    @StateKey(key = "cursorBlink")
-    private boolean cursorBlink;
-
-    @StateKey(key = "cursorToggleCycles")
-    private long cursorToggleCycles = SLOW_CURSOR_CYCLE_COUNT;
-
-    private final CursorDetails cursor = new CursorDetails();
 
     public CRTC6845(
             final SystemStatus systemStatus,
@@ -52,63 +37,17 @@ public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSou
         this.systemVIA = Objects.requireNonNull(systemVIA);
     }
 
-    private static final class CursorDetails {
-
-        int blankingDelay;
-        boolean blinkEnabled;
-        boolean fastBlink;
-        int cursorStart;
-        int cursorEnd;
-
-        void setBlankingDelay(int n) {
-            if (blankingDelay != n) {
-                this.blankingDelay = n;
-            }
-        }
-
-        void setBlinkEnabled(boolean b) {
-            if (blinkEnabled != b) {
-                blinkEnabled = b;
-            }
-        }
-
-        void setFastBlink(boolean b) {
-            if (fastBlink != b) {
-                fastBlink = b;
-            }
-        }
-
-        void setCursorStart(int n) {
-            if (cursorStart != n) {
-                cursorStart = n;
-            }
-        }
-
-        void setCursorEnd(int n) {
-            if (cursorEnd != n) {
-                cursorEnd = n;
-            }
-        }
-
-        boolean isCursorEnabled() {
-            return cursorStart > 0 && (cursorStart < cursorEnd);
-        }
-
-        public String toString() {
-            return "blankingDelay = " + blankingDelay + " blinkEnabled = " + blinkEnabled + " fastBlink = " + fastBlink + " start = " + cursorStart + " end = " + cursorEnd;
-        }
-    }
-
     public boolean isCursorEnabled() {
-        return cursor.isCursorEnabled();
+        return getCursorStartLine() > 0  && (getCursorStartLine() < getCursorEndLine());
     }
 
     public boolean isCursorOn() {
-        return !cursorBlink || cursorOn;
+        return !isCursorBlinkEnabled() || cursorOn;
     }
 
     @Override
     public void tick() {
+        final long cursorToggleCycles = (isCursorFastBlink()) ? FAST_CURSOR_CYCLE_COUNT : SLOW_CURSOR_CYCLE_COUNT;
         if ((cycleCount % cursorToggleCycles) == 0) {
             cursorOn = !cursorOn;
         }
@@ -154,14 +93,6 @@ public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSou
         return registers[0] + 1;
     }
 
-    public int getVerticalTotalChars() {
-        return registers[4] + 1;
-    }
-
-    public int getVerticalAdjust() {
-        return registers[5];
-    }
-
     public int getHorizontalDisplayedChars() {
         return registers[1];
     }
@@ -170,20 +101,55 @@ public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSou
         return registers[2];
     }
 
-    public int getScanlinesPerCharacter() {
-        return registers[9];
+    public int getVerticalTotalChars() {
+        return (registers[4] & 0x7F) + 1;
+    }
+
+    public int getVerticalAdjust() {
+        return registers[5] & 0x1F;
     }
 
     public int getVerticalDisplayedChars() {
-        return registers[6];
+        return registers[6] & 0x7F;
+    }
+
+    public int getVerticalSyncPosition() {
+        return registers[7] & 0x7F;
+    }
+
+    public int getScanlinesPerCharacter() {
+        return registers[9] + 1;
     }
 
     public int getScreenStartAddress() {
         return ((registers[12] & 0xFF) << 8) | (registers[13] & 0xFF);
     }
 
+    //
+    // Cursor stuff
+    //
     public int getCursorAddress() {
-        return cursorAddress;
+        return computeCursorAddress();
+    }
+
+    public int getCursorBlankingDelay() {
+        return (registers[8] >>> 6) & 0x3;
+    }
+
+    public boolean isCursorBlinkEnabled() {
+        return (registers[10] & 0x40) != 0;
+    }
+
+    public boolean isCursorFastBlink() {
+        return (registers[10] & 0x20) == 0;
+    }
+
+    public int getCursorStartLine() {
+        return registers[10] & 0x1F;
+    }
+
+    public int getCursorEndLine() {
+        return registers[11] & 0x1F;
     }
 
     private int computeCursorAddress() {
@@ -216,29 +182,6 @@ public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSou
         } else {
             if (!isReadOnly(v0)) {
                 registers[v0] = value & 0xFF;
-                if (v0 == 8) {
-                    cursor.setBlankingDelay((value >>> 6) & 0x3);
-                }
-                if (v0 == 10) {
-                    cursor.setBlinkEnabled((value & 0x40) != 0);
-                    cursor.setFastBlink((value & 0x20) == 0);
-                    cursor.setCursorStart(value & 0x1F);
-                }
-                if (v0 == 11) {
-                    cursor.setCursorEnd(value & 0x1F);
-                }
-                if (v0 == 15) {
-                    cursorAddress = computeCursorAddress();
-                }
-                if (v0 == 10) {
-                    cursorBlink = (value & 0x40) != 0;
-                    cursorToggleCycles = (value & 0x20) != 0 ? SLOW_CURSOR_CYCLE_COUNT : FAST_CURSOR_CYCLE_COUNT;
-//                    System.err.println("6845: register " + v0 + " = " + Util.formatHexByte(value) + " blink = " + cursorBlink);
-//                    System.err.println("76543210");
-//                    System.err.println(Util.pad0(Integer.toBinaryString(value), 8));
-                }
-
-                //System.err.println("6845: register " + v0 + " = " + Util.formatHexByte(value));
             }
         }
     }

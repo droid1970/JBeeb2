@@ -42,10 +42,12 @@ public final class Screen implements ClockListener {
     private final List<IntConsumer> keyUpListeners = new ArrayList<>();
     private final List<BiConsumer<Integer, Boolean>> keyDownListeners = new ArrayList<>();
 
+    private ScreenRenderer renderer;
     private final ScreenRenderer graphicsRenderer;
     private final TeletextScreenRenderer teletextRenderer;
 
-    private final BufferedImage image = new BufferedImage(IMAGE_WIDTH, IMAGE_HEIGHT, BufferedImage.TYPE_INT_RGB);
+    private final BufferedImage image0 = new BufferedImage(IMAGE_WIDTH, IMAGE_HEIGHT, BufferedImage.TYPE_INT_RGB);
+    private final BufferedImage image1 = new BufferedImage(IMAGE_WIDTH, IMAGE_HEIGHT, BufferedImage.TYPE_INT_RGB);
 
     private long cycleCount = 0L;
     private long totalRefreshTimeNanos = 0L;
@@ -71,15 +73,30 @@ public final class Screen implements ClockListener {
         this.imageComponent = new ImageComponent();
     }
 
+    private int imageIndex;
+
+    private BufferedImage getImageToPaint() {
+        return (imageIndex & 1) == 0 ? image0 : image1;
+    }
+
+    private BufferedImage getImageToShow() {
+        return (imageIndex & 1) != 0 ? image0 : image1;
+    }
+
     @Override
     public void tick() {
-        if (currentMode != null && renderer != null && renderer.isClockBased()) {
-            renderer.tick(currentMode, image);
+        if (renderer != null && renderer.isClockBased()) {
+            renderer.tick(getImageToPaint());
         }
     }
 
     public void imageReady() {
+        swapImages();
         imageComponent.repaint();
+    }
+
+    private void swapImages() {
+        imageIndex++;
     }
 
     public void addKeyUpListener(IntConsumer l) {
@@ -91,21 +108,16 @@ public final class Screen implements ClockListener {
     }
 
     public void vsync() {
-        final DisplayMode mode = Util.inferDisplayMode(videoULA, crtc6845);
-        if (mode != currentMode) {
-            currentMode = mode;
-            if (mode == null) {
-                renderer = null;
-            } else {
-                if (mode == DisplayMode.MODE7) {
-                    renderer = teletextRenderer;
-                } else {
-                    renderer = graphicsRenderer;
-                }
-            }
+        if (videoULA.isTeletext()) {
+            renderer = teletextRenderer;
+        } else {
+            renderer = graphicsRenderer;
         }
+
         if (renderer != null && renderer.isClockBased()) {
-            renderer.vsync(currentMode);
+            final BufferedImage image = getImageToPaint();
+            Util.fillRect(image, Color.BLACK.getRGB(), 0, 0, image.getWidth(), image.getHeight());
+            renderer.vsync();
         } else {
             SwingUtilities.invokeLater(imageComponent::repaint);
         }
@@ -158,7 +170,6 @@ public final class Screen implements ClockListener {
             add(restoreStateButton);
 
             add(Box.createRigidArea(new Dimension(4, 0)));
-
 
             final JCheckBox verboseCheckbox = createCheckbox("verbose");
             verboseCheckbox.addActionListener(e -> {
@@ -221,8 +232,7 @@ public final class Screen implements ClockListener {
         }
     }
 
-    private ScreenRenderer renderer;
-    private DisplayMode currentMode;
+
 
     private final class ImageComponent extends JComponent {
 
@@ -279,16 +289,18 @@ public final class Screen implements ClockListener {
                 g.fillRect(0, 0, getWidth(), getHeight());
             }
 
-            if (currentMode == null || renderer == null) {
+            if (renderer == null) {
                 return;
             }
 
             if (!renderer.isClockBased()) {
                 // Renderer can produce the whole image in one go
-                renderer.refreshWholeImage(currentMode, image);
+                renderer.refreshWholeImage(getImageToPaint());
+                swapImages();
             }
 
             if (renderer.isImageReady()) {
+                final BufferedImage image = getImageToShow();
                 final int iw = image.getWidth() + IMAGE_BORDER_SIZE * 2;
                 final int ih = image.getHeight() + IMAGE_BORDER_SIZE * 2;
 

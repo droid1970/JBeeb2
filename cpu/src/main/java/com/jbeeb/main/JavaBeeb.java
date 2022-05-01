@@ -28,15 +28,17 @@ public final class JavaBeeb {
     public static final BBCFile METEORS = new BBCFile("Meteor2", 0xE00, 0xE00);
     public static final BBCFile MAGIC_MUSHROOMS = new BBCFile("MM-GAME", 0x2000, 0x4700);
     public static final BBCFile SENTINEL = new BBCFile("Sentnel", 0x1900, 0x6D00);
-    public static final BBCFile FREEFALL = new BBCFile("FREEFA3", 0xE00, 0x5080);
+    public static final BBCFile FREEFALL = new BBCFile("FREEFA3", 0xE00, 0x5080); // Keys don't work
     public static final BBCFile CASTLE_QUEST = new BBCFile("BCSTLQST", 0x1900, 0x1900);
-    public static final BBCFile LABYRINTH = new BBCFile("LABYRIN", 0x1100, 0x624E);
+    public static final BBCFile LABYRINTH = new BBCFile("LABYRIN", 0x1100, 0x624E); // Screem doesn't look correct
     public static final BBCFile FRAK = new BBCFile("FRAK", 0x1900, 0x8023);
     public static final BBCFile FRAK2 = new BBCFile("FRAK2", 0x204C, 0x2640);
     public static final BBCFile FRAK3 = new BBCFile("FRAK3", 0x2F00, 0x237D);
     public static final BBCFile FRAKSCR = new BBCFile("FRAKSCR", 0x7C00, 0x0000);
+    public static final BBCFile SPACE_INVADERS = new BBCFile("Vads2", 0x1900, 0x1900);
+    public static final BBCFile THRUST = new BBCFile("THRUST3", 0x1A00, 0x3D6E); // Unrecognized opcode
 
-    private static final BBCFile FILE_TO_RUN = CHUCKIE_EGG;
+    private static final BBCFile FILE_TO_RUN = LABYRINTH;
 
     public static void main(final String[] args) throws Exception {
         createAndRunBBC();

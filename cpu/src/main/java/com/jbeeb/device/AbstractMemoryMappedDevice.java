@@ -1,9 +1,6 @@
 package com.jbeeb.device;
 
-import com.jbeeb.util.StateKey;
-import com.jbeeb.util.StatusProducer;
-import com.jbeeb.util.SystemStatus;
-import com.jbeeb.util.Util;
+import com.jbeeb.util.*;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -63,6 +60,11 @@ public abstract class AbstractMemoryMappedDevice implements MemoryMappedDevice, 
             Util.log(getName() + ": write register " + Util.formatHexByte(address) + " = " + value, 0);
         }
         writeRegister(address - startAddress, value & 0xFF);
+    }
+
+    @Override
+    public TypedMap getProperties() {
+        return new TypedMap();
     }
 
     public abstract int readRegister(int index);

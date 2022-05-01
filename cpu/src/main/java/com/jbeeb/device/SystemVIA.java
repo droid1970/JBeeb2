@@ -37,6 +37,21 @@ public class SystemVIA extends VIA {
         super(systemStatus, name, startAddress, size);
     }
 
+    public final int getScreenStartAddress() {
+        final int n = (IC32 >>> 4) & 0x3;
+        switch (n) {
+            case 0:
+                return 0x4000;
+            case 1:
+                return 0x6000;
+            case 2:
+                return 0x3000;
+            default:
+            case 3:
+                return 0x5800;
+        }
+    }
+
     public final void characterDown(final char c) {
         keyDown(keyMap.get(c));
     }
@@ -52,6 +67,7 @@ public class SystemVIA extends VIA {
     }
 
     private void keyDown(final TargetKey target) {
+
         if (target != null) {
             final ColRow colrow = target.getColRow();
             final Boolean shift = target.getShift();

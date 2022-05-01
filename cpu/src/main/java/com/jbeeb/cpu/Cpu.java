@@ -93,6 +93,11 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     }
 
     @Override
+    public TypedMap getProperties() {
+        return null;
+    }
+
+    @Override
     public SystemStatus getSystemStatus() {
         return systemStatus;
     }
@@ -208,9 +213,9 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
             }
 
             fetch();
-            if (verboseSupplier.getAsBoolean()) {
-                System.err.println(this);
-            }
+//            if (verboseSupplier != null && verboseSupplier.getAsBoolean()) {
+//                System.err.println(this);
+//            }
             cycleCount.incrementAndGet();
         } else {
             instructionDis = "";
@@ -235,9 +240,9 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     }
 
     private void fetch() {
-        if (verboseSupplier.getAsBoolean()) {
-            instructionDis = disassembler.disassemble(pc);
-        }
+//        if (verboseSupplier != null && verboseSupplier.getAsBoolean()) {
+//            instructionDis = disassembler.disassemble(pc);
+//        }
         final int opcode = readFromAndIncrementPC();
         final InstructionKey key = instructionSet.decode(opcode);
         this.instruction = key.getInstruction();

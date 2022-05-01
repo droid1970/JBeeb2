@@ -3,12 +3,11 @@ package com.jbeeb.device;
 import com.jbeeb.util.InterruptSource;
 import com.jbeeb.util.StateKey;
 import com.jbeeb.util.SystemStatus;
-import com.jbeeb.util.Util;
 
-import java.awt.*;
+import java.awt.Color;
 
 @StateKey(key = "videoULA")
-public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSource {
+public class VideoULA_OLD2 extends AbstractMemoryMappedDevice implements InterruptSource {
 
     private static final PhysicalColor[] PHYSICAL_COLORS = new PhysicalColor[]{
             PhysicalColor.solid(Color.BLACK),
@@ -29,28 +28,23 @@ public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSou
             PhysicalColor.flashing(Color.WHITE, Color.BLACK)
     };
 
-    private static final int[] BPP1_MASKS = {
-            0b10000000,
-            0b01000000,
-            0b00100000,
-            0b00010000,
-            0b00001000,
-            0b00000100,
-            0b00000010,
-            0b00000001
-    };
+    @StateKey(key = "masterCursorSize")
+    private int masterCursorSize;
 
-    private static final int[] BPP2_MASKS = {
-            0b10001000,
-            0b01000100,
-            0b00100010,
-            0b00010001
-    };
+    @StateKey(key = "cursorWidthBbytes")
+    private int cursorWidthBbytes;
 
-    private static final int[] BPP4_MASKS = {
-            0b10101010,
-            0b01010101
-    };
+    @StateKey(key = "clockRate")
+    private int clockRate;
+
+    @StateKey(key = "charactersPerLine")
+    private int charactersPerLine;
+
+    @StateKey(key = "teletext")
+    private int teletext;
+
+    @StateKey(key = "flashIndex")
+    private int flashIndex;
 
     @StateKey(key = "videoControlRegister")
     private int videoControlRegister;
@@ -60,12 +54,35 @@ public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSou
             0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
     };
 
-    public VideoULA(final SystemStatus systemStatus, final String name, final int startAddress) {
+    private final CursorDetails cursor = new CursorDetails();
+
+    public VideoULA_OLD2(final SystemStatus systemStatus, final String name, final int startAddress) {
         super(systemStatus, name, startAddress, 8);
     }
 
+    private static final class CursorDetails {
+        int masterCursorSize;
+        int cursorWidthBytes;
+
+        void setMasterCursorSize(final int n) {
+            if (masterCursorSize != n) {
+                masterCursorSize = n;
+            }
+        }
+
+        void setCursorWidthBytes(final int n) {
+            if (cursorWidthBytes != n) {
+                cursorWidthBytes = n;
+            }
+        }
+
+        public String toString() {
+            return "masterCursorSize = " + masterCursorSize + " cursorWidthBytes = " + cursorWidthBytes;
+        }
+    }
+
     public boolean isCursorEnabled() {
-        return getMasterCursorSize() > 0 || getCursorWidth() > 1;
+        return masterCursorSize > 0 || cursorWidthBbytes > 0;
     }
 
     @Override
@@ -78,39 +95,8 @@ public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSou
         return false;
     }
 
-    @Override
-    public int readRegister(int index) {
-        // Registers are write-only
-        return 0;
-    }
-    public int getMasterCursorSize() {
-        return (videoControlRegister >>> 7) & 0x01;
-    }
-
-    public int getCursorWidth() {
-        final int cw = (videoControlRegister >>> 5) & 0x03;
-        switch (cw) {
-            default:
-            case 0:
-                return 1;
-            case 2:
-                return 2;
-            case 3:
-                return 4;
-        }
-    }
-
-    public int getPixelsPerCharacter() {
-        return 8 / getCursorWidth();
-    }
-
-    public boolean isFastClockRate() {
-        return (videoControlRegister & 0x10) != 0;
-    }
-
     public int getCharactersPerLine() {
-        final int cpl = (videoControlRegister >>> 2) & 0x03;
-        switch (cpl) {
+        switch (charactersPerLine) {
             case 3:
                 return 80;
             default:
@@ -123,24 +109,46 @@ public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSou
         }
     }
 
-    public int getSelectedFlashIndex() {
-        return videoControlRegister & 0x01;
+    public boolean isFastClockRate() {
+        return clockRate > 0;
     }
 
     public boolean isTeletext() {
-        return (videoControlRegister & 0x02) != 0;
+        return teletext > 0;
     }
+
+    @Override
+    public int readRegister(int index) {
+        // Registers are write-only
+        return 0;
+    }
+
+    public int getMasterCursorSize() {
+        return (videoControlRegister >>> 7) & 0x01;
+    }
+
 
     @Override
     public void writeRegister(int index, int value) {
         index = index & 1;
         if (index == 0) {
             this.videoControlRegister = (value & 0xFF);
+            this.masterCursorSize = (value >>> 7) & 0x01;
+            cursor.setMasterCursorSize(masterCursorSize);
+            this.teletext = (value & 0x02) >>> 1;
+            this.cursorWidthBbytes = (value >>> 5) & 0x03;
+            cursor.setCursorWidthBytes(cursorWidthBbytes);
+            this.clockRate = (value >>> 4) & 0x01;
+            this.charactersPerLine = (value >>> 2) & 0x03;
+            this.flashIndex = value & 0x01;
         } else if (index == 1) {
             final int logicalIndex = (value >>> 4) & 0x0F;
             final int actualColour = (value & 0x0F);
             palette[logicalIndex] = actualColour ^ 0x7;
         }
+//        System.err.println("videoULA: register " + index + " = " + Util.formatHexByte(value & 0xfe));
+//        System.err.println("76543210");
+//        System.err.println(Util.pad0(Integer.toBinaryString(value), 8));
     }
 
     public Color getPhysicalColor(int logicalColorIndex, final int bitsPerPixel) {
@@ -169,27 +177,7 @@ public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSou
 
                 }
         }
-        return PHYSICAL_COLORS[palette[paletteIndex]].getCurrentColor(getSelectedFlashIndex());
-    }
-
-    public static int getLogicalColour(final int v, final int position, final int bitsPerPixel) {
-        switch (bitsPerPixel) {
-            default:
-            case 1:
-                return ((v & BPP1_MASKS[position]) != 0) ? 1 : 0;
-            case 2: {
-                final int maskedAndShifted = (v & BPP2_MASKS[position]) >>> (3 - position);
-                return (maskedAndShifted & 1) | (maskedAndShifted >>> 3);
-            }
-            case 4: {
-                final int maskedAndShifted = (v & BPP4_MASKS[position]) >>> (1 - position);
-                // 0 1 0 1 0 1 0 1
-                return (maskedAndShifted & 1) |
-                        ((maskedAndShifted >> 1) & 2) |
-                        ((maskedAndShifted >> 2) & 4) |
-                        ((maskedAndShifted >> 3) & 8);
-            }
-        }
+        return PHYSICAL_COLORS[palette[paletteIndex]].getCurrentColor(flashIndex);
     }
 
     private static final class PhysicalColor {
