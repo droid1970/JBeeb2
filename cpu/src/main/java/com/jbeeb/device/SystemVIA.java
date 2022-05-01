@@ -10,6 +10,7 @@ import com.jbeeb.util.Util;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.IntConsumer;
 
 @StateKey(key = "systemVIA")
 public class SystemVIA extends VIA {
@@ -19,7 +20,7 @@ public class SystemVIA extends VIA {
     private final boolean[][] keyDown = new boolean[16][16];
     private final Boolean[][] keyDownShift = new Boolean[16][16];
     private ColRow lastKeyDown = null;
-    private final SoundChip soundChip = new SoundChip();
+    private final IntConsumer soundChip = new SoundChip2();
 
     @StateKey(key = "IC32")
     private int IC32;
@@ -57,7 +58,7 @@ public class SystemVIA extends VIA {
     @Override
     public void tick() {
         super.tick();
-        soundChip.tick();
+        //soundChip.tick();
     }
 
     public final void characterDown(final char c) {
