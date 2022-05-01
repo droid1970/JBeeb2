@@ -3,7 +3,6 @@ package com.jbeeb.device;
 import com.jbeeb.util.InterruptSource;
 import com.jbeeb.util.StateKey;
 import com.jbeeb.util.SystemStatus;
-import com.jbeeb.util.Util;
 
 import java.awt.*;
 
@@ -143,7 +142,9 @@ public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSou
         }
     }
 
-    public Color getPhysicalColor(int logicalColorIndex, final int bitsPerPixel) {
+    public Color getPhysicalColor(int v, int b) {
+        final int bitsPerPixel = getCursorWidth();
+        final int logicalColorIndex = getLogicalColour(v, b, bitsPerPixel);
         if (logicalColorIndex > 0) {
             int x = 1;
         }

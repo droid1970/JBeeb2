@@ -1,6 +1,6 @@
 package com.jbeeb.teletext;
 
-import com.jbeeb.device.CRTC6845;
+import com.jbeeb.device.Crtc6845;
 import com.jbeeb.device.SystemVIA;
 import com.jbeeb.device.VideoULA;
 import com.jbeeb.screen.AbstractScreenRenderer;
@@ -20,7 +20,7 @@ public final class TeletextScreenRenderer extends AbstractScreenRenderer {
 
     private final TeletextRenderer renderer = new TeletextRenderer();
 
-    public TeletextScreenRenderer(Memory memory, SystemVIA systemVIA, CRTC6845 crtc6845, VideoULA videoULA) {
+    public TeletextScreenRenderer(Memory memory, SystemVIA systemVIA, Crtc6845 crtc6845, VideoULA videoULA) {
         super(memory, systemVIA, crtc6845, videoULA);
         final Timer flashTimer = new Timer("teletext-flasher", true);
         final TimerTask task = new TimerTask() {

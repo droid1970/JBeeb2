@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Objects;
 
 @StateKey(key = "crtc6845")
-public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSource, ClockListener {
+public class Crtc6845 extends AbstractMemoryMappedDevice implements InterruptSource, ClockListener {
 
     private static final int VERTICAL_SYNC_FREQUENCY_HZ = 50;
     private static final long VERTICAL_SYNC_CYCLE_COUNT = 2_000_000L / VERTICAL_SYNC_FREQUENCY_HZ;
@@ -27,7 +27,7 @@ public class CRTC6845 extends AbstractMemoryMappedDevice implements InterruptSou
     private long cycleCount;
     private boolean cursorOn;
 
-    public CRTC6845(
+    public Crtc6845(
             final SystemStatus systemStatus,
             final String name,
             final int startAddress,

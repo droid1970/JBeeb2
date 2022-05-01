@@ -99,6 +99,10 @@ final class TeletextRenderer {
         this.conceal = true;
     }
 
+    public boolean isContiguousGraphics() {
+        return contiguousGraphics;
+    }
+
     public void setContiguousGraphics(final boolean contiguousGraphics) {
         this.contiguousGraphics = contiguousGraphics;
     }

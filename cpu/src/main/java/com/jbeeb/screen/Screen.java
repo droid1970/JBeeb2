@@ -1,6 +1,6 @@
 package com.jbeeb.screen;
 
-import com.jbeeb.device.CRTC6845;
+import com.jbeeb.device.Crtc6845;
 import com.jbeeb.device.SystemVIA;
 import com.jbeeb.device.VideoULA;
 import com.jbeeb.main.BBCMicro;
@@ -37,7 +37,7 @@ public final class Screen implements ClockListener {
     private final SystemStatus systemStatus;
     private final BBCMicro bbc;
     private final VideoULA videoULA;
-    private final CRTC6845 crtc6845;
+    private final Crtc6845 crtc6845;
     private final SystemVIA systemVIA;
     private final List<IntConsumer> keyUpListeners = new ArrayList<>();
     private final List<BiConsumer<Integer, Boolean>> keyDownListeners = new ArrayList<>();
@@ -59,7 +59,7 @@ public final class Screen implements ClockListener {
             final BBCMicro bbc,
             final Memory memory,
             final VideoULA videoULA,
-            final CRTC6845 crtc6845,
+            final Crtc6845 crtc6845,
             final SystemVIA systemVIA
     ) {
         this.systemStatus = Objects.requireNonNull(systemStatus);
@@ -90,8 +90,9 @@ public final class Screen implements ClockListener {
         }
     }
 
-    public void imageReady() {
+    public void imageReady(final long timeNanos) {
         swapImages();
+        totalRefreshTimeNanos += timeNanos;
         imageComponent.repaint();
     }
 

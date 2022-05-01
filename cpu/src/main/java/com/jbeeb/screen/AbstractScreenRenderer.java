@@ -1,6 +1,6 @@
 package com.jbeeb.screen;
 
-import com.jbeeb.device.CRTC6845;
+import com.jbeeb.device.Crtc6845;
 import com.jbeeb.device.SystemVIA;
 import com.jbeeb.device.VideoULA;
 import com.jbeeb.memory.Memory;
@@ -11,13 +11,13 @@ public abstract class AbstractScreenRenderer implements ScreenRenderer {
 
     protected final Memory memory;
     protected final SystemVIA systemVIA;
-    protected final CRTC6845 crtc6845;
+    protected final Crtc6845 crtc6845;
     protected final VideoULA videoULA;
 
     public AbstractScreenRenderer(
             final Memory memory,
             final SystemVIA systemVIA,
-            final CRTC6845 crtc6845,
+            final Crtc6845 crtc6845,
             final VideoULA videoULA
     ) {
         this.memory = memory;

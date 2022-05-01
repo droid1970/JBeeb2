@@ -1,20 +1,20 @@
 package com.jbeeb.screen;
 
-import com.jbeeb.device.CRTC6845;
+import com.jbeeb.device.Crtc6845;
 import com.jbeeb.device.SystemVIA;
 import com.jbeeb.device.VideoULA;
 import com.jbeeb.memory.Memory;
 import com.jbeeb.util.Util;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.util.Objects;
 
 public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
 
     private final Screen screen;
 
-    private long cycleCount;
-    private long vsyncCount;
     private long cyclesSinceSync = 0L;
     private long ticksSinceSync = 0L;
 
@@ -28,11 +28,13 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
     //
     // Timings
     //
-    private int horizontalDisplayedChars;
     private int horizontalTotalChars;
+    private int horizontalDisplayedChars;
+
     private int verticalTotalChars;
     private int verticalDisplayedChars;
     private int verticalAdjust;
+
     private boolean fastClock;
 
     private int scanLinesPerChar;
@@ -48,9 +50,9 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
 
     private long paintStart;
 
-    public GraphicsModeScreenRenderer(Screen screen, Memory memory, SystemVIA systemVIA, CRTC6845 crtc6845, VideoULA videoULA) {
+    public GraphicsModeScreenRenderer(Screen screen, Memory memory, SystemVIA systemVIA, Crtc6845 crtc6845, VideoULA videoULA) {
         super(memory, systemVIA, crtc6845, videoULA);
-        this.screen = screen;
+        this.screen = Objects.requireNonNull(screen);
     }
 
     @Override
@@ -68,7 +70,6 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
         verticalAdjust = crtc6845.getVerticalAdjust();
 
         scanLinesPerChar = crtc6845.getScanlinesPerCharacter();
-
         scanLineCount = verticalDisplayedChars * 8;
 
         pixelsPerChar = videoULA.getPixelsPerCharacter();
@@ -84,8 +85,6 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
         charPos = 0;
         scanLine = 0;
         cursorRect = null;
-
-        vsyncCount++;
     }
 
     @Override
@@ -95,7 +94,6 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
 
     @Override
     public void tick(final BufferedImage image) {
-        cycleCount++;
         if (fastClock || ((cyclesSinceSync & 1) == 0)) {
             if ((ticksSinceSync % horizontalTotalChars) < horizontalDisplayedChars) {
                 try {
@@ -107,14 +105,12 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
             ticksSinceSync++;
         }
         cyclesSinceSync++;
-
     }
 
     @Override
     public boolean isImageReady() {
         return scanLine >= scanLineCount;
     }
-
 
     private void paintNextCharacter(final BufferedImage img) {
         if (scanLine >= scanLineCount) {
@@ -134,7 +130,7 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
         int px = x;
         int py = computeCharY(scanLine, scanLinesPerChar, pixelHeight);
         for (int b = 0; b < pixelsPerChar; b++) {
-            final int rgb = videoULA.getPhysicalColor(VideoULA.getLogicalColour(v, b, bitsPerPixel), bitsPerPixel).getRGB() & 0xFFFFFF;
+            final int rgb = videoULA.getPhysicalColor(v, b).getRGB() & 0xFFFFFF;
             Util.fillRect(img, rgb, px, py, pixelWidth, pixelHeight);
             px += pixelWidth;
         }
@@ -164,17 +160,12 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
                 }
                 cursorRect = null;
             }
-            if ((vsyncCount & 0x3f) == 0) {
-                final long paintTimeNanos = System.nanoTime() - paintStart;
-                //System.err.println(" paint time = " + Util.formatDurationNanosAsMillis(paintTimeNanos));
-            }
-            screen.imageReady();
+            screen.imageReady(System.nanoTime() - paintStart);
         }
     }
 
     private static int computeCharY(final int scanLine, final int scanLinesPerChar, final int pixelHeight) {
-        int charRow = (scanLine >>> 3);
-        return (charRow * scanLinesPerChar * pixelHeight) + ((scanLine & 0x7) * pixelHeight);
+        return ((scanLine >>> 3) * scanLinesPerChar * pixelHeight) + ((scanLine & 0x7) * pixelHeight);
     }
 
     private static int wrapAddress(final int baseAddress, int address) {

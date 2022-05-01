@@ -29,7 +29,7 @@ public final class BBCMicro implements InterruptSource {
     private final VideoULA videoULA;
     private final SystemVIA systemVIA;
     private final UserVIA userVIA;
-    private final CRTC6845 crtc6845;
+    private final Crtc6845 crtc6845;
     private final RandomAccessMemory ram;
 
     private final Cpu cpu;
@@ -71,7 +71,7 @@ public final class BBCMicro implements InterruptSource {
                 32
         );
 
-        this.crtc6845 = new CRTC6845(
+        this.crtc6845 = new Crtc6845(
                 systemStatus,
                 "CRTC 6845",
                 SHEILA,

@@ -5,6 +5,7 @@ import com.jbeeb.keymap.KeyMap;
 import com.jbeeb.keymap.TargetKey;
 import com.jbeeb.util.StateKey;
 import com.jbeeb.util.SystemStatus;
+import com.jbeeb.util.Util;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -18,6 +19,7 @@ public class SystemVIA extends VIA {
     private final boolean[][] keyDown = new boolean[16][16];
     private final Boolean[][] keyDownShift = new Boolean[16][16];
     private ColRow lastKeyDown = null;
+    private final SoundChip soundChip = new SoundChip();
 
     @StateKey(key = "IC32")
     private int IC32;
@@ -50,6 +52,12 @@ public class SystemVIA extends VIA {
             case 3:
                 return 0x5800;
         }
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        soundChip.tick();
     }
 
     public final void characterDown(final char c) {
@@ -178,6 +186,10 @@ public class SystemVIA extends VIA {
     @Override
     public void portAUpdated() {
         updateKeys();
+        if ((IC32 & 1) == 0) {
+            soundChip.accept(portAPins);
+        }
+
     }
 
     private int screenAddress;
