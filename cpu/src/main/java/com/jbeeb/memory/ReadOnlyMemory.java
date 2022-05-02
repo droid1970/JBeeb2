@@ -1,6 +1,7 @@
 package com.jbeeb.memory;
 
 import java.io.*;
+import java.util.Arrays;
 
 public final class ReadOnlyMemory extends AbstractMemory {
     public ReadOnlyMemory(int start, int[] data) {
@@ -19,5 +20,17 @@ public final class ReadOnlyMemory extends AbstractMemory {
 
         int x = 1;
         return new ReadOnlyMemory(codeStart, data);
+    }
+
+    public static ReadOnlyMemory fromResource(final int codeStart, final String resourceName) throws IOException {
+        final int[] data = new int[65536];
+        int size = 0;
+        try (InputStream in = ReadOnlyMemory.class.getResourceAsStream(resourceName)) {
+            int b;
+            while ((b = in.read()) >= 0) {
+                data[size++] = b;
+            }
+        }
+        return new ReadOnlyMemory(codeStart, Arrays.copyOf(data, size));
     }
 }

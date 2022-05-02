@@ -18,8 +18,8 @@ import java.util.function.Consumer;
 public final class BBCMicro implements InterruptSource {
 
     private static final File STATE_FILE = new File(System.getProperty("user.home"), "state.bbc");
-    private static final File OS_ROM_FILE = new File(System.getProperty("user.home"), "OS-1.2.rom");
-    private static final File BASIC_ROM_FILE = new File(System.getProperty("user.home"), "BASIC2.rom");
+    private static final String BASIC_ROM_RESOURCE_NAME = "/roms/BASIC2.rom";
+    private static final String OS_ROM_RESOURCE_NAME = "/roms/OS-1.2.rom";
 
     private static final int SHEILA = 0xFE00;
 
@@ -85,8 +85,8 @@ public final class BBCMicro implements InterruptSource {
         devices.add(userVIA);
         devices.add(new SheilaMemoryMappedDevice(systemStatus));
 
-        final Memory languageRom = ReadOnlyMemory.fromFile(0x8000, BASIC_ROM_FILE);
-        final Memory osRom = ReadOnlyMemory.fromFile(0xC000, OS_ROM_FILE);
+        final Memory languageRom = ReadOnlyMemory.fromResource(0x8000, BASIC_ROM_RESOURCE_NAME);
+        final Memory osRom = ReadOnlyMemory.fromResource(0xC000, OS_ROM_RESOURCE_NAME);
         this.ram = new RandomAccessMemory(0, 32768);
         final Memory memory = Memory.bbcMicroB(devices, ram, languageRom, osRom);
 

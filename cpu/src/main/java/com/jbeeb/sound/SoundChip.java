@@ -9,15 +9,17 @@ public final class SoundChip implements IntConsumer  {
     private int[] register = new int[4];
     private int latchedRegister;
 
-    private SquareWaveSoundChannel[] soundChannel;
+    private SoundChannel[] soundChannel;
 
     public SoundChip() {
         try {
-            this.soundChannel = new SquareWaveSoundChannel[4];
-            for (int i = 0; i < 4; i++) {
+            this.soundChannel = new SoundChannel[4];
+            for (int i = 0; i < 3; i++) {
                 soundChannel[i] = new SquareWaveSoundChannel(256);
                 soundChannel[i].start();
             }
+            soundChannel[3] = new NoiseSoundChannel(256);
+            soundChannel[3].start();
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -40,9 +42,12 @@ public final class SoundChip implements IntConsumer  {
             // Volume
             int newVolume = 15 - (value & 0xF);
             final double vol = newVolume / 15.0;
-            soundChannel[channel].setVolume((channel == 3) ? 0.0 : vol);
-        } else if (channel == 3) {
-            // Noise not supported yet
+            if (channel == 3) {
+                int x = 1;
+            }
+            soundChannel[channel].setVolume(vol);
+//        } else if (channel == 3) {
+//            // Noise not supported yet
         } else if ((command & 0x80) != 0) {
             register[channel] = (register[channel] & ~0x0f) | (value & 0x0f);
         } else {
