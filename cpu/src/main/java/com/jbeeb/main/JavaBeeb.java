@@ -38,7 +38,7 @@ public final class JavaBeeb {
     public static final BBCFile SPACE_INVADERS = new BBCFile("Vads2", 0x1900, 0x1900);
     public static final BBCFile THRUST = new BBCFile("THRUST3", 0x1A00, 0x3D6E); // Unrecognized opcode
 
-    private static final BBCFile FILE_TO_RUN = METEORS;
+    private static final BBCFile FILE_TO_RUN = CHUCKIE_EGG;
 
     public static void main(final String[] args) throws Exception {
         createAndRunBBC();

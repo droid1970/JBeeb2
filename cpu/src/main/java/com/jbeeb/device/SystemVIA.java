@@ -3,9 +3,9 @@ package com.jbeeb.device;
 import com.jbeeb.keymap.ColRow;
 import com.jbeeb.keymap.KeyMap;
 import com.jbeeb.keymap.TargetKey;
+import com.jbeeb.sound.SoundChip;
 import com.jbeeb.util.StateKey;
 import com.jbeeb.util.SystemStatus;
-import com.jbeeb.util.Util;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -20,7 +20,7 @@ public class SystemVIA extends VIA {
     private final boolean[][] keyDown = new boolean[16][16];
     private final Boolean[][] keyDownShift = new Boolean[16][16];
     private ColRow lastKeyDown = null;
-    private final IntConsumer soundChip = new SoundChip2();
+    private final IntConsumer soundChip = new SoundChip();
 
     @StateKey(key = "IC32")
     private int IC32;

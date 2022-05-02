@@ -1,22 +1,17 @@
-package com.jbeeb.device;
+package com.jbeeb.sound;
 
-import com.jbeeb.main.SquareWaveSoundChannel;
+import com.jbeeb.sound.SquareWaveSoundChannel;
 
 import java.util.function.IntConsumer;
 
-public final class SoundChip2 implements IntConsumer  {
+public final class SoundChip implements IntConsumer  {
 
-    private int[] volume = new int[4];
     private int[] register = new int[4];
     private int latchedRegister;
 
     private SquareWaveSoundChannel[] soundChannel;
 
-    public void tick() {
-        //soundChannel.tick();
-    }
-
-    public SoundChip2() {
+    public SoundChip() {
         try {
             this.soundChannel = new SquareWaveSoundChannel[4];
             for (int i = 0; i < 4; i++) {
@@ -46,7 +41,6 @@ public final class SoundChip2 implements IntConsumer  {
             int newVolume = 15 - (value & 0xF);
             final double vol = newVolume / 15.0;
             soundChannel[channel].setVolume((channel == 3) ? 0.0 : vol);
-            volume[channel] = newVolume;
         } else if (channel == 3) {
             // Noise not supported yet
         } else if ((command & 0x80) != 0) {
