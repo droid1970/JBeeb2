@@ -24,11 +24,13 @@ abstract class AbstractSoundChannel extends Thread implements SoundChannel {
         line.start();
     }
 
-    private AtomicInteger freq = new AtomicInteger();
-    private AtomicReference<Double> vol = new AtomicReference<>(0.0);
-
     private int lastFrequency;
     private double lastVolume;
+
+    protected int rawPeriod;
+
+    private AtomicInteger freq = new AtomicInteger();
+    private AtomicReference<Double> vol = new AtomicReference<>(0.0);
 
     protected final byte[] data = new byte[SAMPLE_RATE];
 
@@ -39,17 +41,23 @@ abstract class AbstractSoundChannel extends Thread implements SoundChannel {
             while (!stopRequested) {
                 final double volume = vol.get();
                 final int frequency = freq.get();
-                boolean changed = false;
-                if (lastVolume != volume || lastFrequency != frequency) {
+                if (shouldRecomputeData(frequency, volume)) {
                     count = computeData(SAMPLE_RATE, frequency, volume);
-                    lastFrequency = frequency;
-                    lastVolume = volume;
-                    changed = true;
                 }
                 sendData(data, count, true);
             }
         }catch (Exception ex) {
             ex.printStackTrace();
+        }
+    }
+
+    protected boolean shouldRecomputeData(final int frequency, final double volume) {
+        if (lastVolume != volume || lastFrequency != frequency) {
+            lastVolume = volume;
+            lastFrequency = frequency;
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -67,5 +75,10 @@ abstract class AbstractSoundChannel extends Thread implements SoundChannel {
     @Override
     public void setFrequency(final int frequency) {
         freq.set(frequency);
+    }
+
+    @Override
+    public void setRawPeriod(final int rawPeriod) {
+        this.rawPeriod = rawPeriod;
     }
 }

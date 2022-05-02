@@ -42,21 +42,26 @@ public final class SoundChip implements IntConsumer  {
             // Volume
             int newVolume = 15 - (value & 0xF);
             final double vol = newVolume / 15.0;
-            if (channel == 3) {
-                int x = 1;
-            }
             soundChannel[channel].setVolume(vol);
 //        } else if (channel == 3) {
 //            // Noise not supported yet
         } else if ((command & 0x80) != 0) {
-            register[channel] = (register[channel] & ~0x0f) | (value & 0x0f);
+            if (channel == 3) {
+                register[channel] = value & 0x7;
+                soundChannel[channel].setRawPeriod(register[channel]);
+            } else {
+                register[channel] = (register[channel] & ~0x0f) | (value & 0x0f);
+            }
         } else {
             register[channel] = (register[channel] & 0x0f) | ((value & 0x3f) << 4);
             soundChannel[channel].setFrequency((int) freq(register[channel]));
+            if (channel == 2) {
+                soundChannel[3].setFrequency((int) freq(register[2]));
+            }
         }
     }
 
     private static double freq(final int freq) {
-        return (4_000_000.0 / 32.0) / freq;
+        return (4_000_000.0 / 16.0) / freq;
     }
 }
