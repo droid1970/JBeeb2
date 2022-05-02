@@ -3,15 +3,14 @@ package com.jbeeb.main;
 import com.jbeeb.cpu.Cpu;
 import com.jbeeb.device.*;
 import com.jbeeb.memory.Memory;
+import com.jbeeb.memory.PagedROM;
 import com.jbeeb.memory.RandomAccessMemory;
 import com.jbeeb.memory.ReadOnlyMemory;
 import com.jbeeb.screen.Screen;
 import com.jbeeb.util.*;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
@@ -19,6 +18,7 @@ public final class BBCMicro implements InterruptSource {
 
     private static final File STATE_FILE = new File(System.getProperty("user.home"), "state.bbc");
     private static final String BASIC_ROM_RESOURCE_NAME = "/roms/BASIC2.rom";
+    private static final String DFS_ROM_RESOURCE_NAME = "/roms/DFS-1.2.rom";
     private static final String OS_ROM_RESOURCE_NAME = "/roms/OS-1.2.rom";
 
     private static final int SHEILA = 0xFE00;
@@ -30,6 +30,8 @@ public final class BBCMicro implements InterruptSource {
     private final SystemVIA systemVIA;
     private final UserVIA userVIA;
     private final Crtc6845 crtc6845;
+    private final FloppyDiskController fdc;
+    private final PagedRomSelect pagedRomSelect;
     private final RandomAccessMemory ram;
 
     private final Cpu cpu;
@@ -78,17 +80,39 @@ public final class BBCMicro implements InterruptSource {
                 systemVIA
         );
 
+        this.fdc = new FloppyDiskController(systemStatus, "FDC8271", SHEILA + 0x80);
+
+        this.pagedRomSelect = new PagedRomSelect(systemStatus, "Paged ROM", SHEILA + 0x30, 1);
+
         final List<MemoryMappedDevice> devices = new ArrayList<>();
         devices.add(videoULA);
         devices.add(systemVIA);
         devices.add(crtc6845);
         devices.add(userVIA);
+        devices.add(fdc);
+        devices.add(pagedRomSelect);
         devices.add(new SheilaMemoryMappedDevice(systemStatus));
 
-        final Memory languageRom = ReadOnlyMemory.fromResource(0x8000, BASIC_ROM_RESOURCE_NAME);
+        final ReadOnlyMemory basicRom = ReadOnlyMemory.fromResource(0x8000, BASIC_ROM_RESOURCE_NAME);
+        final ReadOnlyMemory dfsRom = ReadOnlyMemory.fromResource(0x8000, DFS_ROM_RESOURCE_NAME);
+
+        final Map<Integer, ReadOnlyMemory> roms = new HashMap<>();
+        roms.put(15, basicRom);
+        roms.put(12, dfsRom);
+
+        final PagedROM pagedROM = new PagedROM(0x8000, 16384, pagedRomSelect, roms);
+
+        for (int i = 0x8000; i < (0x8000 + 16384); i++) {
+            int b1 = basicRom.readByte(i);
+            int b2 = pagedROM.readByte(i);
+            if (b1 != b2) {
+                int x = 1;
+            }
+        }
+
         final Memory osRom = ReadOnlyMemory.fromResource(0xC000, OS_ROM_RESOURCE_NAME);
         this.ram = new RandomAccessMemory(0, 32768);
-        final Memory memory = Memory.bbcMicroB(devices, ram, languageRom, osRom);
+        final Memory memory = Memory.bbcMicroB(devices, ram, pagedROM, osRom);
 
         final Screen screen = new Screen(
                 systemStatus,

@@ -34,11 +34,11 @@ public interface Memory {
         return new RandomAccessMemory(start, size);
     }
 
-    static Memory bbcMicroB(final List<MemoryMappedDevice> devices, final Memory ram, final Memory languageRom, final Memory osRom) {
+    static Memory bbcMicroB(final List<MemoryMappedDevice> devices, final Memory ram, final Memory pagedRom, final Memory osRom) {
         final List<Memory> regions = new ArrayList<>();
         regions.addAll(devices);
         regions.add(ram);
-        regions.add(languageRom);
+        regions.add(pagedRom);
         regions.add(osRom);
         return new CompoundMemory(regions);
     }

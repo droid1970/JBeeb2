@@ -62,11 +62,6 @@ public abstract class AbstractMemoryMappedDevice implements MemoryMappedDevice, 
         writeRegister(address - startAddress, value & 0xFF);
     }
 
-    @Override
-    public TypedMap getProperties() {
-        return new TypedMap();
-    }
-
     public abstract int readRegister(int index);
     public abstract void writeRegister(int index, int value);
 }

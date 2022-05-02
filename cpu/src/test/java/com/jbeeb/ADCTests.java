@@ -69,7 +69,6 @@ public class ADCTests {
                 "ADC $2000,Y"
         );
         assertThat(cpu.getA()).isEqualTo(30);
-        cpu.assertA(30);
     }
 
     @Test

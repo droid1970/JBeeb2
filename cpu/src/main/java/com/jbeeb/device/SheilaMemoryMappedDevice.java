@@ -1,7 +1,5 @@
 package com.jbeeb.device;
 
-import com.jbeeb.device.AbstractMemoryMappedDevice;
-import com.jbeeb.util.State;
 import com.jbeeb.util.SystemStatus;
 
 public final class SheilaMemoryMappedDevice extends AbstractMemoryMappedDevice {
@@ -17,10 +15,6 @@ public final class SheilaMemoryMappedDevice extends AbstractMemoryMappedDevice {
 
     @Override
     public void writeRegister(int index, int value) {
-
-    }
-
-    public void apply(State state) {
         // Nothing to do here
     }
 }

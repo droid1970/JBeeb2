@@ -9,7 +9,6 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
-import java.util.function.Function;
 
 @StateKey(key = "cpu6502")
 public final class Cpu implements Device, ClockListener, Runnable, StatusProducer {
@@ -90,11 +89,6 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
         this.memory = Objects.requireNonNull(memory);
         this.disassembler = new Disassembler(instructionSet, memory);
         reset();
-    }
-
-    @Override
-    public TypedMap getProperties() {
-        return null;
     }
 
     @Override
@@ -979,40 +973,6 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
         return s.toString();
     }
 
-    public void assertFlagsSet(Flag... flags) {
-        for (Flag f : flags) {
-            if (!isFlagSet(f)) {
-                throw new AssertionError();
-            }
-        }
-    }
-
-    public void assertFlagsClear(Flag... flags) {
-        for (Flag f : flags) {
-            if (isFlagSet(f)) {
-                throw new AssertionError();
-            }
-        }
-    }
-
-    public void assertA(final int value) {
-        if (a != value) {
-            throw new AssertionError();
-        }
-    }
-
-    public void assertX(final int value) {
-        if (x != value) {
-            throw new AssertionError();
-        }
-    }
-
-    public void assertY(final int value) {
-        if (y != value) {
-            throw new AssertionError();
-        }
-    }
-
     private static final class OpQueue {
 
         private final Runnable[] queue = new Runnable[16];
@@ -1042,25 +1002,6 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
             head = (head + 1) & 0xF;
             size--;
             return ret;
-        }
-    }
-
-    private static final class Intercept {
-
-        final int address;
-        final Function<Cpu, String> messageProducer;
-
-        public Intercept(int address, Function<Cpu, String> messageProducer) {
-            this.address = address;
-            this.messageProducer = messageProducer == null ? c -> "" : messageProducer;
-        }
-
-        public int getAddress() {
-            return address;
-        }
-
-        public Function<Cpu, String> getMessageProducer() {
-            return messageProducer;
         }
     }
 }
