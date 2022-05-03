@@ -3,6 +3,8 @@ package com.jbeeb.device;
 import com.jbeeb.keymap.ColRow;
 import com.jbeeb.keymap.KeyMap;
 import com.jbeeb.keymap.TargetKey;
+import com.jbeeb.sound.MultiSoundChip;
+import com.jbeeb.sound.NopSoundChip;
 import com.jbeeb.sound.SoundChip;
 import com.jbeeb.util.StateKey;
 import com.jbeeb.util.SystemStatus;
@@ -20,7 +22,7 @@ public class SystemVIA extends VIA {
     private final boolean[][] keyDown = new boolean[16][16];
     private final Boolean[][] keyDownShift = new Boolean[16][16];
     private ColRow lastKeyDown = null;
-    private final IntConsumer soundChip = new SoundChip();
+    private final IntConsumer soundChip = createSoundChip();
 
     @StateKey(key = "IC32")
     private int IC32;
@@ -30,6 +32,15 @@ public class SystemVIA extends VIA {
 
     @StateKey(key = "shiftLockLight")
     private boolean shiftlockLight;
+
+    private static IntConsumer createSoundChip() {
+        try {
+            return new MultiSoundChip();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return new NopSoundChip();
+        }
+    }
 
     public SystemVIA(
             final SystemStatus systemStatus,

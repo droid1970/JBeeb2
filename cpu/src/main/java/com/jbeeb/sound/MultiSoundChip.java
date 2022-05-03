@@ -2,27 +2,22 @@ package com.jbeeb.sound;
 
 import java.util.function.IntConsumer;
 
-public final class SoundChip implements IntConsumer  {
-
-    // TODO: One sound thread with multiple channels
+public final class MultiSoundChip implements IntConsumer  {
 
     private int[] register = new int[4];
     private int latchedRegister;
 
-    private final SoundChannel[] soundChannels = new SoundChannel[4];
     private final NoiseGenerator noiseGenerator = new NoiseGenerator();
+    private final MultiSoundChannel soundChannel;
 
-    public SoundChip() {
-        try {
-            for (int i = 0; i < 3; i++) {
-                soundChannels[i] = new SoundChannel(new SquareWaveGenerator(20));
-                soundChannels[i].start();
-            }
-            this.soundChannels[3] = new SoundChannel(noiseGenerator);
-            this.soundChannels[3].start();
-        } catch (Exception ex) {
-            ex.printStackTrace();
+    public MultiSoundChip() throws Exception {
+        final WaveGenerator[] waveGenerators = new WaveGenerator[4];
+        for (int i = 0; i < 3; i++) {
+            waveGenerators[i] = new SquareWaveGenerator(20);
         }
+        waveGenerators[3] = noiseGenerator;
+        this.soundChannel = new MultiSoundChannel(waveGenerators);
+        this.soundChannel.start();
     }
 
     @Override
@@ -42,7 +37,7 @@ public final class SoundChip implements IntConsumer  {
             // Volume
             int newVolume = 15 - (value & 0xF);
             final double vol = newVolume / 15.0;
-            soundChannels[channel].setVolume(vol);
+            soundChannel.setVolume(channel, vol);
         } else if ((command & 0x80) != 0) {
             if (channel == 3) {
                 register[channel] = value & 0x7;
@@ -52,10 +47,10 @@ public final class SoundChip implements IntConsumer  {
             }
         } else {
             register[channel] = (register[channel] & 0x0f) | ((value & 0x3f) << 4);
-            soundChannels[channel].setFrequency((int) freq(register[channel]));
+            soundChannel.setFrequency(channel, (int) freq(register[channel]));
             if (channel == 2) {
                 // Set the noise generator's period from Channel 1
-                soundChannels[3].setPeriod(register[2] / 2);
+                soundChannel.setPeriod(3, register[2] / 2);
             }
         }
     }

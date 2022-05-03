@@ -54,9 +54,10 @@ public class NoiseGenerator implements WaveGenerator {
         return lfsr;
     }
 
+    private NoiseType noiseType = NoiseType.WHITE_HIGH;
+
     private long tick = 0;
     private long lastTransition = 0;
-    private NoiseType noiseType = NoiseType.WHITE_HIGH;
     private int period;
     private int periodLatch = 100;
     private boolean output = true;

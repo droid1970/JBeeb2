@@ -9,12 +9,13 @@ import java.util.Objects;
 public class SoundChannel extends Thread {
 
     private static final int SAMPLE_RATE = 44_100;
-    private static final int BUFFER_SIZE = SAMPLE_RATE / 100;
+    private static final int FRAME_SIZE = SAMPLE_RATE / 100;
+    private static final int BUFFER_SIZE = FRAME_SIZE * 4;
 
     private final WaveGenerator waveGenerator;
     private final SourceDataLine line;
 
-    private final byte[] data = new byte[BUFFER_SIZE];
+    private final byte[] data = new byte[FRAME_SIZE];
 
     private double volume = 0.0;
 
@@ -24,7 +25,7 @@ public class SoundChannel extends Thread {
         this.waveGenerator = Objects.requireNonNull(waveGenerator);
         final AudioFormat af = new AudioFormat(SAMPLE_RATE, 8, 1, true, true);
         line = AudioSystem.getSourceDataLine(af);
-        line.open(af, BUFFER_SIZE * 4);
+        line.open(af, BUFFER_SIZE);
         line.start();
     }
 
