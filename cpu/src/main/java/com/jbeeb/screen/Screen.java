@@ -181,15 +181,12 @@ public final class Screen implements ClockListener {
 
             add(Box.createRigidArea(new Dimension(4, 0)));
 
-
             mhzLabel = createLabel();
             add(mhzLabel);
 
             screenLabel = createLabel();
             add(Box.createRigidArea(new Dimension(4, 0)));
             add(screenLabel);
-
-
 
             add(Box.createGlue());
         }
