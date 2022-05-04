@@ -277,10 +277,7 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     }
 
     private void fetch() {
-//        while (memory.processIntercepts(pc)) {
-//            // Repeat
-//        }
-        if (pc == 0x7000) {
+        if (pc >= 0x9002 && pc <= 0x900E) {
             int x = 1;
         }
         while (memory.processIntercepts(pc)) {

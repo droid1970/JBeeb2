@@ -102,21 +102,15 @@ public final class BBCMicro implements InterruptSource {
         }
 
         final ReadOnlyMemory basicRom = ReadOnlyMemory.fromResource(0x8000, BASIC_ROM_RESOURCE_NAME);
-
         final ReadOnlyMemory dfsRom = ReadOnlyMemory.fromResource(0x8000, DFS_ROM_RESOURCE_NAME);
-        for (int i = 0x8000; i < 0x8100; i++) {
-            final int v = dfsRom.readByte(i);
-            final char c = (char) v;
-            System.err.println(Util.formatHexWord(i) + " = " + Util.formatHexByte(v) + " / " + c + " / " + Util.pad0(Integer.toBinaryString(v), 8));
-        }
-        final TestRom testRom = new TestRom("My DFS", "(C) Ian T 2022");
+        final FilingSystemROM filingSystemROM = new FilingSystemROM("My DFS", "(C) Ian T 2022");
         final Map<Integer, ReadOnlyMemory> roms = new HashMap<>();
         roms.put(15, basicRom);
 
         if (INSTALL_DFS) {
             roms.put(12, dfsRom);
         } else {
-            roms.put(12, testRom);
+            roms.put(12, filingSystemROM);
         }
 
         final PagedROM pagedROM = new PagedROM(0x8000, 16384, pagedRomSelect, roms);
@@ -124,8 +118,6 @@ public final class BBCMicro implements InterruptSource {
         this.ram = new RandomAccessMemory(0, 32768);
 
         final Memory memory = Memory.bbcMicroB(devices, ram, pagedROM, osRom);
-
-
 
         final Screen screen = new Screen(
                 systemStatus,
@@ -140,22 +132,23 @@ public final class BBCMicro implements InterruptSource {
         crtc6845.addVSyncListener(screen::vsync);
 
         this.cpu = new Cpu(systemStatus, scheduler, memory);
-        testRom.installIntercept(0x9000, new AtomicFetchIntercept(cpu, () -> {
-            System.err.println("Test ROM entered: A = " + cpu.getA() + " X = " + cpu.getX() + " Y = " + cpu.getY());
-            switch (cpu.getA()) {
-                case 9:
-                    int addr = memory.readWord(0xF2) + cpu.getY();
-                    StringBuilder s = new StringBuilder();
-                    while (memory.readByte(addr) != 0xd) {
-                        s.append((char) memory.readByte(addr++));
-                    }
-                    System.err.println("*HELP " + s);
-                    break;
-            }
-            if (cpu.getA() == 1) {
-                cpu.setY(cpu.getY() + 1, true);
-            }
-        }));
+//        testRom.installIntercept(0x9000, new AtomicFetchIntercept(cpu, () -> {
+//            System.err.println("Test ROM entered: A = " + cpu.getA() + " X = " + cpu.getX() + " Y = " + cpu.getY());
+//            switch (cpu.getA()) {
+//                case 9:
+//                    int addr = memory.readWord(0xF2) + cpu.getY();
+//                    StringBuilder s = new StringBuilder();
+//                    while (memory.readByte(addr) != 0xd) {
+//                        s.append((char) memory.readByte(addr++));
+//                    }
+//                    System.err.println("*HELP " + s);
+//                    break;
+//            }
+//            if (cpu.getA() == 1) {
+//                cpu.setY(cpu.getY() + 1, true);
+//            }
+//        }));
+        filingSystemROM.initialise(memory, cpu);
         cpu.setVerboseSupplier(() -> false);
         if (fdc != null) {
             this.fdc.setCpu(cpu);

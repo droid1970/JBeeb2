@@ -1,6 +1,14 @@
 package com.jbeeb.cpu;
 
+import com.jbeeb.memory.Memory;
+
 public final class CpuUtil {
+
+    public static void osfsc(final Memory memory, final Cpu cpu, final int a) {
+        final int addr = memory.readWord(0x21e);
+        cpu.setA(a, true);
+        cpu.JSR(addr);
+    }
 
     public static void oswrch(final Cpu cpu, final int ch) {
         cpu.setA(ch, true);

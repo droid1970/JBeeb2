@@ -45,6 +45,9 @@ public abstract class AbstractMemory implements Memory {
     @Override
     public void writeByte(int address, int value) {
         if (!readOnly) {
+            if (address == 0x212) {
+                System.err.println("written " + value + " to 212");
+            }
             checkWriteable();
             Util.checkUnsignedByte(value);
             memory[computeIndex(address)] = value;
