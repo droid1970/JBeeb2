@@ -5,17 +5,16 @@ import com.jbeeb.util.*;
 import com.jbeeb.assembler.Disassembler;
 import com.jbeeb.memory.Memory;
 
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 
 @StateKey(key = "cpu6502")
-public final class Cpu implements Device, ClockListener, Runnable, StatusProducer {
+public final class Cpu implements Device, ClockListener, Runnable, StatusProducer, Scheduler {
 
     private static final boolean USE_QUEUE = true;
 
-    public static final int NMI_JUMP_VECTOR = 0xFFFB;
+    public static final int NMI_JUMP_VECTOR = 0xFFFA;
     public static final int CODE_START_VECTOR = 0xFFFC;
     public static final int IRQ_JUMP_VECTOR = 0xFFFE;
 
@@ -59,7 +58,9 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     private boolean servicingInterrupt;
 
     @StateKey(key = "inISR")
-    private boolean inISR;
+    private boolean inIRQ;
+
+    private boolean inNMI;
 
     //
     // Temporary registers
@@ -84,11 +85,29 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     private boolean irq;
     private boolean nmi;
 
-    public Cpu(final SystemStatus systemStatus, final Memory memory) {
+    private final Scheduler scheduler;
+
+    public Cpu(final SystemStatus systemStatus, final Scheduler scheduler, final Memory memory) {
         this.systemStatus = Objects.requireNonNull(systemStatus);
+        this.scheduler = Objects.requireNonNull(scheduler);
         this.memory = Objects.requireNonNull(memory);
         this.disassembler = new Disassembler(instructionSet, memory);
         reset();
+    }
+
+    @Override
+    public ScheduledTask newTask(Runnable runnable) {
+        return scheduler.newTask(runnable);
+    }
+
+    @Override
+    public void schedule(ScheduledTask task, long delay) {
+        scheduler.schedule(task, delay);
+    }
+
+    @Override
+    public void unschedule(ScheduledTask task) {
+        scheduler.unschedule(task);
     }
 
     @Override
@@ -121,7 +140,16 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     }
 
     private boolean isNMI() {
-        return (interruptSource == null) ? false : interruptSource.isNMI();
+        if (true) {
+            if (nmiRequested) {
+                nmiRequested = false;
+                return true;
+            } else {
+                return false;
+            }
+            //return !isInNMI() && nmiRequested;
+        }
+        return !isInNMI() && ((interruptSource == null) ? false : interruptSource.isNMI());
     }
 
     public Memory getMemory() {
@@ -150,33 +178,39 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
         }
     }
 
-    public boolean isInISR() {
-        return inISR;
+    public boolean isInIRQ() {
+        return inIRQ;
+    }
+
+    public boolean isInNMI() {
+        return inNMI;
     }
 
     private void serviceNMI() {
-
+        servicingInterrupt = true;
+        callInterruptHandler(NMI_JUMP_VECTOR, true, false, true);
     }
 
     private void serviceIRQ() {
         servicingInterrupt = true;
-        callInterruptHandler(false, true);
+        callInterruptHandler(IRQ_JUMP_VECTOR, false, false, true);
     }
 
-    private void callInterruptHandler(final boolean setBreakFlag, final boolean clearServicingInterrupt) {
+    private void callInterruptHandler(final int jumpVector, final boolean nmi, final boolean setBreakFlag, final boolean clearServicingInterrupt) {
         pushByte(getPCH()); // not queued
         queue(() -> pushByte(getPCL()));
         queue(() -> {
             pushByte(Flag.BREAK.set(flags, setBreakFlag));
             flags = Flag.INTERRUPT.set(flags);
         });
-        queue(() -> setPCL(readMemory(IRQ_JUMP_VECTOR)));
+        queue(() -> setPCL(readMemory(jumpVector)));
         queue(() -> {
-            setPCH(readMemory(IRQ_JUMP_VECTOR + 1));
+            setPCH(readMemory(jumpVector + 1));
             if (clearServicingInterrupt) {
                 servicingInterrupt = false;
             }
-            inISR = true;
+            inIRQ = !nmi;
+            inNMI = nmi;
         });
     }
 
@@ -184,12 +218,17 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
         this.saveStateCallback = callback;
     }
 
+    private volatile boolean nmiRequested;
+    public void requestNMI(final boolean b) {
+        nmiRequested = b;
+    }
+
     @Override
     public void tick() {
+        scheduler.tick();
         pcDis = pc;
         if (queue.isEmpty()) {
             if (!servicingInterrupt) {
-
                 // We are quiescent here
                 if (saveStateCallback != null) {
                     saveStateCallback.run();
@@ -198,6 +237,7 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
 
                 // Check interrupt status
                 if (isNMI()) {
+                    Util.log("CPU: serviceNMI", 0);
                     serviceNMI();
                     return;
                 } else if (Flag.INTERRUPT.isClear(flags) && isIRQ()) {
@@ -206,10 +246,13 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
                 }
             }
 
+            if (verboseSupplier != null && verboseSupplier.getAsBoolean()) {
+                System.err.println(this);
+            }
             fetch();
-//            if (verboseSupplier != null && verboseSupplier.getAsBoolean()) {
-//                System.err.println(this);
-//            }
+            if (verboseSupplier != null && verboseSupplier.getAsBoolean()) {
+                System.err.println(this);
+            }
             cycleCount.incrementAndGet();
         } else {
             instructionDis = "";
@@ -234,9 +277,9 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     }
 
     private void fetch() {
-//        if (verboseSupplier != null && verboseSupplier.getAsBoolean()) {
-//            instructionDis = disassembler.disassemble(pc);
-//        }
+        if (verboseSupplier != null && verboseSupplier.getAsBoolean()) {
+            instructionDis = disassembler.disassemble(pc);
+        }
         final int opcode = readFromAndIncrementPC();
         final InstructionKey key = instructionSet.decode(opcode);
         this.instruction = key.getInstruction();
@@ -271,7 +314,11 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
                 });
                 queue(() -> {
                     setPCH(popByteNoIncrement());
-                    inISR = false;
+                    if (inNMI) {
+                        Util.log("CPU: RTI", 0);
+                    }
+                    inIRQ = false;
+                    inNMI = false;
                 });
                 return;
             }
@@ -970,6 +1017,7 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
         s.append("  SP = ").append(Util.formatHexByte(getSP()));
         s.append("  SR = ").append(Flag.toString(flags));
         s.append("  irq = " + isIRQ());
+        s.append("  nmi = " + isNMI());
         return s.toString();
     }
 

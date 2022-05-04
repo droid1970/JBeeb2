@@ -2,6 +2,7 @@ package com.jbeeb.main;
 
 import com.jbeeb.util.*;
 
+import javax.swing.text.MutableAttributeSet;
 import java.io.File;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -38,7 +39,7 @@ public final class JavaBeeb {
     public static final BBCFile SPACE_INVADERS = new BBCFile("Vads2", 0x1900, 0x1900);
     public static final BBCFile THRUST = new BBCFile("THRUST3", 0x1A00, 0x3D6E); // Unrecognized opcode
 
-    private static final BBCFile FILE_TO_RUN = CHUCKIE_EGG;
+    private static final BBCFile FILE_TO_RUN = null;
 
     public static void main(final String[] args) throws Exception {
         createAndRunBBC();
@@ -60,15 +61,16 @@ public final class JavaBeeb {
                 }
             }
 
-            try {
-                while (true) {
-                    Thread.sleep(5000);
-                    updateSystemStatus(bbc.getSystemStatus(), bbc.getCpu().getCycleCount(), (System.nanoTime() - startTime));
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+//            try {
+//                while (true) {
+//                    Thread.sleep(5000);
+//                    updateSystemStatus(bbc.getSystemStatus(), bbc.getCpu().getCycleCount(), (System.nanoTime() - startTime));
+//                }
+//            } catch (Exception ex) {
+//                ex.printStackTrace();
+//            }
         });
+
         t.start();
         bbc.run(() -> false);
         reportCyclesPerSecond(bbc.getCpu().getCycleCount(), System.nanoTime() - startTime);

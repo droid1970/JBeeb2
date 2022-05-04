@@ -2,6 +2,7 @@ package com.jbeeb.main;
 
 import com.jbeeb.cpu.Cpu;
 import com.jbeeb.device.*;
+import com.jbeeb.disk.FloppyDiskController;
 import com.jbeeb.memory.Memory;
 import com.jbeeb.memory.PagedROM;
 import com.jbeeb.memory.RandomAccessMemory;
@@ -80,7 +81,8 @@ public final class BBCMicro implements InterruptSource {
                 systemVIA
         );
 
-        this.fdc = new FloppyDiskController(systemStatus, "FDC8271", SHEILA + 0x80);
+        final Scheduler scheduler = new DefaultScheduler();
+        this.fdc = new FloppyDiskController(systemStatus, scheduler, "FDC8271", SHEILA + 0x80);
 
         this.pagedRomSelect = new PagedRomSelect(systemStatus, "Paged ROM", SHEILA + 0x30, 1);
 
@@ -92,6 +94,9 @@ public final class BBCMicro implements InterruptSource {
         devices.add(fdc);
         devices.add(pagedRomSelect);
         devices.add(new SheilaMemoryMappedDevice(systemStatus));
+
+        fdc.load(0, new File(System.getProperty("user.home"), "Arcadians.ssd"));
+        fdc.load(1, new File(System.getProperty("user.home"), "Arcadians.ssd"));
 
         final ReadOnlyMemory basicRom = ReadOnlyMemory.fromResource(0x8000, BASIC_ROM_RESOURCE_NAME);
         final ReadOnlyMemory dfsRom = ReadOnlyMemory.fromResource(0x8000, DFS_ROM_RESOURCE_NAME);
@@ -112,6 +117,7 @@ public final class BBCMicro implements InterruptSource {
 
         final Memory osRom = ReadOnlyMemory.fromResource(0xC000, OS_ROM_RESOURCE_NAME);
         this.ram = new RandomAccessMemory(0, 32768);
+
         final Memory memory = Memory.bbcMicroB(devices, ram, pagedROM, osRom);
 
         final Screen screen = new Screen(
@@ -126,10 +132,12 @@ public final class BBCMicro implements InterruptSource {
         screen.addKeyUpListener(systemVIA::keyUp);
         crtc6845.addVSyncListener(screen::vsync);
 
-        this.cpu = new Cpu(systemStatus, memory);
+        this.cpu = new Cpu(systemStatus, scheduler, memory);
         cpu.setVerboseSupplier(() -> false);
+        this.fdc.setCpu(cpu);
 
         this.runner = new Runner(
+                systemStatus,
                 2_000_000,
                 Long.MAX_VALUE,
                 Arrays.asList(cpu, systemVIA, userVIA, crtc6845, screen)
@@ -138,7 +146,31 @@ public final class BBCMicro implements InterruptSource {
         addInterruptSource(systemVIA);
         addInterruptSource(userVIA);
         addInterruptSource(videoULA);
+        addInterruptSource(fdc);
         cpu.setInterruptSource(this);
+    }
+
+    private static final class TestTask implements Runnable {
+
+        final Scheduler scheduler;
+        final ScheduledTask task;
+
+        int count;
+
+        public TestTask(Scheduler scheduler) {
+            this.scheduler = scheduler;
+            this.task = scheduler.newTask(this);
+            this.task.schedule(2_000_000);
+        }
+
+        @Override
+        public void run() {
+            System.err.println("Task: count = " + count);
+            count++;
+            if (count < 5) {
+                task.schedule(2_000_000);
+            }
+        }
     }
 
     private State savedState;

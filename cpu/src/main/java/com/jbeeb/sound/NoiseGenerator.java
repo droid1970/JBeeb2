@@ -86,6 +86,6 @@ public class NoiseGenerator implements WaveGenerator {
     @Override
     public void setPeriod(long period) {
         // This is for the *_CHANNEL_1 types
-        this.periodLatch = (int) (period & 0xF);
+        this.periodLatch = (int) ((period & 0x3FF) >>> 1);
     }
 }

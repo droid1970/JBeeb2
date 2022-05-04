@@ -42,7 +42,7 @@ public final class SoundChip implements IntConsumer  {
             // Volume
             int newVolume = 15 - (value & 0xF);
             final double vol = newVolume / 15.0;
-            soundChannels[channel].setVolume(vol);
+            soundChannels[channel].setVolume((channel == 3) ? 0.0 : vol);
         } else if ((command & 0x80) != 0) {
             if (channel == 3) {
                 register[channel] = value & 0x7;

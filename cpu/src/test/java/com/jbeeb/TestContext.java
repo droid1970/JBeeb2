@@ -3,6 +3,7 @@ package com.jbeeb;
 import com.jbeeb.assembler.Assembler;
 import com.jbeeb.cpu.*;
 import com.jbeeb.memory.Memory;
+import com.jbeeb.util.DefaultScheduler;
 import com.jbeeb.util.SystemStatus;
 import com.jbeeb.util.Util;
 
@@ -26,7 +27,7 @@ public final class TestContext {
         this.assembler = new Assembler(CODE_START, memory, instructionSet);
         this.assembler.assemble(statements);
         this.assembler.assemble("HLT");
-        this.cpu = new Cpu(SystemStatus.NOP, memory);
+        this.cpu = new Cpu(SystemStatus.NOP, new DefaultScheduler(), memory);
         this.cpu.setVerboseSupplier(() -> false);
     }
 

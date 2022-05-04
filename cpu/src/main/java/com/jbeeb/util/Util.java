@@ -4,6 +4,7 @@ import com.jbeeb.assembler.Assembler;
 import com.jbeeb.cpu.Cpu;
 import com.jbeeb.cpu.Flag;
 import com.jbeeb.cpu.InstructionSet;
+import com.jbeeb.disk.DiskDetails;
 import com.jbeeb.memory.Memory;
 
 import java.awt.image.BufferedImage;
@@ -216,7 +217,7 @@ public final class Util {
         final Assembler assembler = new Assembler(codeStart, memory, instructionSet);
         assembler.assemble(statements);
         assembler.assemble("HLT");
-        return new Cpu(SystemStatus.NOP, memory).setVerboseSupplier(null);
+        return new Cpu(SystemStatus.NOP, new DefaultScheduler(), memory).setVerboseSupplier(null);
     }
 
     public static Cpu runCpu(final int codeStart, final String... statements) {
@@ -434,27 +435,14 @@ public final class Util {
         return ret;
     }
 
-    private static FileMetadata readMetadata(final File file) throws IOException {
-        final int[] data = readFile(file);
-        for (int i = 0; i < data.length; i++) {
-            final int b = data[i];
-            System.err.println("b = " + b + " / " + Util.formatHexByte(b) + " / " + ((char) b));
+    public static DiskDetails getDiskDetails(final String name) {
+        boolean dsd = false;
+        int size = 80 * 10 * 256;
+        if (name != null && name.toLowerCase().endsWith(".dsd")) {
+            dsd = true;
+            size *= 2;
         }
-        int x = 1;
-        return null;
-    }
-
-    private static final class FileMetadata {
-
-        final String name;
-        final int loadAddress;
-        final int execAddress;
-
-        public FileMetadata(String name, int loadAddress, int execAddress) {
-            this.name = name;
-            this.loadAddress = loadAddress;
-            this.execAddress = execAddress;
-        }
+        return new DiskDetails(dsd, size);
     }
 
     public static void fillRect(final BufferedImage img, final int rgb, final int x, final int y, final int width, final int height) {
@@ -471,5 +459,11 @@ public final class Util {
                 img.setRGB(rx, ry, ((img.getRGB(rx, ry) & 0xFFFFFF) ^ (rgb & 0xFFFFFF)) | 0xFF000000);
             }
         }
+    }
+
+    public static int[] resizeArray(final int[] array, final int size) {
+        final int[] ret = new int[size];
+        System.arraycopy(array, 0, ret, 0, Math.min(array.length, size));
+        return ret;
     }
 }
