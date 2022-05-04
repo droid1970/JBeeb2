@@ -8,8 +8,6 @@ import java.util.Objects;
 
 public class BaseDisk implements Disk {
 
-    private static final int DiscTimeSlice = 16 * 16;
-
     private final FloppyDiskController fdc;
     private int[] data;
     private final String name;
@@ -68,7 +66,7 @@ public class BaseDisk implements Disk {
             if (++this.byteWithinSector == 256) {
                 this.fdc.discFinishRead();
             } else {
-                rescheduleReadTask(DiscTimeSlice);
+                rescheduleReadTask(FloppyDiskController.DISC_TIME_SLICE);
             }
         });
 
@@ -82,7 +80,7 @@ public class BaseDisk implements Disk {
                 this.fdc.discFinishRead();
                 this.flush();
             } else {
-                rescheduleWriteTask(DiscTimeSlice);
+                rescheduleWriteTask(FloppyDiskController.DISC_TIME_SLICE);
             }
         });
 
@@ -111,7 +109,7 @@ public class BaseDisk implements Disk {
                     return;
             }
             this.byteWithinSector++;
-            rescheduleReadAddrTask(DiscTimeSlice);
+            rescheduleReadAddrTask(FloppyDiskController.DISC_TIME_SLICE);
         });
 
         formatTask = scheduler.newTask(() -> {
@@ -129,7 +127,7 @@ public class BaseDisk implements Disk {
                     return;
                 }
             }
-            rescheduleFormatTask(DiscTimeSlice);
+            rescheduleFormatTask(FloppyDiskController.DISC_TIME_SLICE);
         });
     }
 
@@ -156,7 +154,7 @@ public class BaseDisk implements Disk {
     }
     private boolean check(final int track, final int side, final boolean density) {
         if (this.track != track || density || ((side != 0) && !this.isDsd)) {
-            this.notFoundTask.reschedule(500 * DiscTimeSlice);
+            this.notFoundTask.reschedule(500 * FloppyDiskController.DISC_TIME_SLICE);
             return false;
         }
         return true;
@@ -166,7 +164,7 @@ public class BaseDisk implements Disk {
     public void read(int sector, int track, int side, boolean density) {
         if (!this.check(track, side, density)) return;
         this.side = side;
-        this.readTask.reschedule(DiscTimeSlice);
+        this.readTask.reschedule(FloppyDiskController.DISC_TIME_SLICE);
         this.sectorOffset = sector * 256 + ((side != 0)  ? 10 * 256 : 0);
         this.byteWithinSector = 0;
     }
@@ -178,7 +176,7 @@ public class BaseDisk implements Disk {
         // NB in old code this used to override "time" to be -1000, which immediately forced a write.
         // I'm not sure why that was required. So I'm ignoring it here. Any funny disc write bugs might be
         // traceable to this change.
-        this.writeTask.reschedule(DiscTimeSlice);
+        this.writeTask.reschedule(FloppyDiskController.DISC_TIME_SLICE);
         this.sectorOffset = sector * 256 + ((side != 0) ? 10 * 256 : 0);
         this.byteWithinSector = 0;
     }
@@ -187,7 +185,7 @@ public class BaseDisk implements Disk {
     public void address(int track, int side, boolean density) {
         if (!this.check(track, side, density)) return;
         this.side = side;
-        this.readAddrTask.reschedule(DiscTimeSlice);
+        this.readAddrTask.reschedule(FloppyDiskController.DISC_TIME_SLICE);
         this.byteWithinSector = 0;
         this.rsector = 0;
     }
@@ -196,7 +194,7 @@ public class BaseDisk implements Disk {
     public void format(int track, int side, boolean density) {
         if (!this.check(track, side, density)) return;
         this.side = side;
-        this.formatTask.reschedule(DiscTimeSlice);
+        this.formatTask.reschedule(FloppyDiskController.DISC_TIME_SLICE);
         this.formatSector = 0;
         this.sectorOffset = (side != 0) ? 10 * 256 : 0;
         this.byteWithinSector = 0;

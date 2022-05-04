@@ -2,7 +2,6 @@ package com.jbeeb.memory;
 
 import com.jbeeb.device.PagedRomSelect;
 
-import java.util.Arrays;
 import java.util.Map;
 
 public final class PagedROM implements Memory {
@@ -41,5 +40,20 @@ public final class PagedROM implements Memory {
     @Override
     public void writeByte(int address, int value) {
         // Do nothing
+    }
+
+    @Override
+    public void installIntercept(int address, FetchIntercept intercept) {
+        roms[selector.getSelectedSlot()].installIntercept(address, intercept);
+    }
+
+    @Override
+    public void removeIntercept(int address) {
+        roms[selector.getSelectedSlot()].removeIntercept(address);
+    }
+
+    @Override
+    public boolean processIntercepts(int address) {
+        return roms[selector.getSelectedSlot()].processIntercepts(address);
     }
 }

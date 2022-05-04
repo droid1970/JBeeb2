@@ -12,16 +12,12 @@ public final class CompoundMemory implements Memory {
     }
 
     private Memory getRegion(final int address) {
-        if (address == 14000) {
-            int x = 1;
-        }
         for (Memory m : regions) {
             if (m.hasAddress(address)) {
                 return m;
             }
         }
         throw cannotAccessException(address);
-        //return regions.stream().filter(r -> r.hasAddress(address)).findFirst().orElseThrow(() -> cannotAccessException(address));
     }
 
     private IllegalStateException cannotAccessException(final int address) {
@@ -51,5 +47,20 @@ public final class CompoundMemory implements Memory {
     @Override
     public void writeWord(int address, int value) {
         getRegion(address).writeWord(address, value);
+    }
+
+    @Override
+    public void installIntercept(int address, FetchIntercept intercept) {
+        getRegion(address).installIntercept(address, intercept);
+    }
+
+    @Override
+    public void removeIntercept(int address) {
+        getRegion(address).removeIntercept(address);
+    }
+
+    @Override
+    public boolean processIntercepts(int address) {
+        return getRegion(address).processIntercepts(address);
     }
 }

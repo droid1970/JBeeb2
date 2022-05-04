@@ -8,6 +8,8 @@ import static com.jbeeb.cpu.Instruction.*;
 
 public final class InstructionSet {
 
+    public static final int RTS_OPCODE = 0x60;
+
     private final Map<InstructionKey, Integer> instructionToCode = new HashMap<>();
     private final Map<Integer, InstructionKey> codeToInstruction = new HashMap<>();
     private final Map<Instruction, Set<AddressMode>> instructionSupportedAddressModes = new EnumMap<>(Instruction.class);
@@ -138,7 +140,7 @@ public final class InstructionSet {
         register(ROR, AddressMode.ABSOLUTE, 0x6e);
         register(ROR, AddressMode.ABSOLUTE_X, 0x7e);
         register(RTI, AddressMode.IMPLIED, 0x40);
-        register(RTS, AddressMode.IMPLIED, 0x60);
+        register(RTS, AddressMode.IMPLIED, RTS_OPCODE);
         register(SBC, AddressMode.IMMEDIATE, 0xe9);
         register(SBC, AddressMode.ZPG, 0xe5);
         register(SBC, AddressMode.ZPG_X, 0xf5);

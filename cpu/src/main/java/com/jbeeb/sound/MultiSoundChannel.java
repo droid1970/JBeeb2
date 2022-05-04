@@ -8,6 +8,8 @@ import java.util.Arrays;
 
 public class MultiSoundChannel extends Thread {
 
+    private static final double MASTER_VOLUME = 0.25;
+
     private static final int SAMPLE_RATE = 44_100;
     private static final int FRAME_SIZE = SAMPLE_RATE / 100;
     private static final int BUFFER_SIZE = FRAME_SIZE * 4;
@@ -37,7 +39,7 @@ public class MultiSoundChannel extends Thread {
     }
 
     public void setVolume(final int channelIndex, final double volume) {
-        this.volume[channelIndex] = Math.max(-1.0, Math.min(1.0, volume));
+        this.volume[channelIndex] = MASTER_VOLUME * Math.max(-1.0, Math.min(1.0, volume));
     }
 
     public void setPeriod(final int channelIndex, final int period) {

@@ -136,20 +136,16 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     }
 
     private boolean isIRQ() {
-        return (interruptSource == null) ? false : interruptSource.isIRQ();
+        return interruptSource != null && interruptSource.isIRQ();
     }
 
     private boolean isNMI() {
-        if (true) {
-            if (nmiRequested) {
-                nmiRequested = false;
-                return true;
-            } else {
-                return false;
-            }
-            //return !isInNMI() && nmiRequested;
+        if (nmiRequested) {
+            nmiRequested = false;
+            return true;
+        } else {
+            return false;
         }
-        return !isInNMI() && ((interruptSource == null) ? false : interruptSource.isNMI());
     }
 
     public Memory getMemory() {
@@ -187,6 +183,9 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     }
 
     private void serviceNMI() {
+        if (inNMI) {
+            int x = 1;
+        }
         servicingInterrupt = true;
         callInterruptHandler(NMI_JUMP_VECTOR, true, false, true);
     }
@@ -222,6 +221,7 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     public void requestNMI(final boolean b) {
         nmiRequested = b;
     }
+
 
     @Override
     public void tick() {
@@ -277,15 +277,31 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     }
 
     private void fetch() {
-        if (verboseSupplier != null && verboseSupplier.getAsBoolean()) {
-            instructionDis = disassembler.disassemble(pc);
+//        while (memory.processIntercepts(pc)) {
+//            // Repeat
+//        }
+        if (pc == 0x7000) {
+            int x = 1;
+        }
+        while (memory.processIntercepts(pc)) {
+            // Do nothing
         }
         final int opcode = readFromAndIncrementPC();
         final InstructionKey key = instructionSet.decode(opcode);
         this.instruction = key.getInstruction();
         this.addressMode = key.getAddressMode();
-
         execute();
+    }
+
+    public void JSR(final int address) {
+        final int pcNow = pc;
+        final int pcDec = pcNow - 1;
+        pushByte((pcDec >>> 8) & 0xFF);
+        pushByte(pcDec & 0xFF);
+        setPC(address);
+        while (pc != pcNow) {
+            tick();
+        }
     }
 
     private void execute() {

@@ -3,10 +3,7 @@ package com.jbeeb.main;
 import com.jbeeb.cpu.Cpu;
 import com.jbeeb.device.*;
 import com.jbeeb.disk.FloppyDiskController;
-import com.jbeeb.memory.Memory;
-import com.jbeeb.memory.PagedROM;
-import com.jbeeb.memory.RandomAccessMemory;
-import com.jbeeb.memory.ReadOnlyMemory;
+import com.jbeeb.memory.*;
 import com.jbeeb.screen.Screen;
 import com.jbeeb.util.*;
 
@@ -16,6 +13,8 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 public final class BBCMicro implements InterruptSource {
+
+    private static final boolean INSTALL_DFS = false;
 
     private static final File STATE_FILE = new File(System.getProperty("user.home"), "state.bbc");
     private static final String BASIC_ROM_RESOURCE_NAME = "/roms/BASIC2.rom";
@@ -82,7 +81,7 @@ public final class BBCMicro implements InterruptSource {
         );
 
         final Scheduler scheduler = new DefaultScheduler();
-        this.fdc = new FloppyDiskController(systemStatus, scheduler, "FDC8271", SHEILA + 0x80);
+        this.fdc = (INSTALL_DFS) ? new FloppyDiskController(systemStatus, scheduler, "FDC8271", SHEILA + 0x80) : null;
 
         this.pagedRomSelect = new PagedRomSelect(systemStatus, "Paged ROM", SHEILA + 0x30, 1);
 
@@ -91,34 +90,42 @@ public final class BBCMicro implements InterruptSource {
         devices.add(systemVIA);
         devices.add(crtc6845);
         devices.add(userVIA);
-        devices.add(fdc);
+        if (fdc != null) {
+            devices.add(fdc);
+        }
         devices.add(pagedRomSelect);
         devices.add(new SheilaMemoryMappedDevice(systemStatus));
 
-        fdc.load(0, new File(System.getProperty("user.home"), "Arcadians.ssd"));
-        fdc.load(1, new File(System.getProperty("user.home"), "Arcadians.ssd"));
-
-        final ReadOnlyMemory basicRom = ReadOnlyMemory.fromResource(0x8000, BASIC_ROM_RESOURCE_NAME);
-        final ReadOnlyMemory dfsRom = ReadOnlyMemory.fromResource(0x8000, DFS_ROM_RESOURCE_NAME);
-
-        final Map<Integer, ReadOnlyMemory> roms = new HashMap<>();
-        roms.put(15, basicRom);
-        roms.put(12, dfsRom);
-
-        final PagedROM pagedROM = new PagedROM(0x8000, 16384, pagedRomSelect, roms);
-
-        for (int i = 0x8000; i < (0x8000 + 16384); i++) {
-            int b1 = basicRom.readByte(i);
-            int b2 = pagedROM.readByte(i);
-            if (b1 != b2) {
-                int x = 1;
-            }
+        if (fdc != null) {
+            fdc.load(0, new File(System.getProperty("user.home"), "Arcadians.ssd"));
+            fdc.load(1, new File(System.getProperty("user.home"), "Arcadians.ssd"));
         }
 
+        final ReadOnlyMemory basicRom = ReadOnlyMemory.fromResource(0x8000, BASIC_ROM_RESOURCE_NAME);
+
+        final ReadOnlyMemory dfsRom = ReadOnlyMemory.fromResource(0x8000, DFS_ROM_RESOURCE_NAME);
+        for (int i = 0x8000; i < 0x8100; i++) {
+            final int v = dfsRom.readByte(i);
+            final char c = (char) v;
+            System.err.println(Util.formatHexWord(i) + " = " + Util.formatHexByte(v) + " / " + c + " / " + Util.pad0(Integer.toBinaryString(v), 8));
+        }
+        final TestRom testRom = new TestRom("My DFS", "(C) Ian T 2022");
+        final Map<Integer, ReadOnlyMemory> roms = new HashMap<>();
+        roms.put(15, basicRom);
+
+        if (INSTALL_DFS) {
+            roms.put(12, dfsRom);
+        } else {
+            roms.put(12, testRom);
+        }
+
+        final PagedROM pagedROM = new PagedROM(0x8000, 16384, pagedRomSelect, roms);
         final Memory osRom = ReadOnlyMemory.fromResource(0xC000, OS_ROM_RESOURCE_NAME);
         this.ram = new RandomAccessMemory(0, 32768);
 
         final Memory memory = Memory.bbcMicroB(devices, ram, pagedROM, osRom);
+
+
 
         final Screen screen = new Screen(
                 systemStatus,
@@ -133,8 +140,26 @@ public final class BBCMicro implements InterruptSource {
         crtc6845.addVSyncListener(screen::vsync);
 
         this.cpu = new Cpu(systemStatus, scheduler, memory);
+        testRom.installIntercept(0x9000, new AtomicFetchIntercept(cpu, () -> {
+            System.err.println("Test ROM entered: A = " + cpu.getA() + " X = " + cpu.getX() + " Y = " + cpu.getY());
+            switch (cpu.getA()) {
+                case 9:
+                    int addr = memory.readWord(0xF2) + cpu.getY();
+                    StringBuilder s = new StringBuilder();
+                    while (memory.readByte(addr) != 0xd) {
+                        s.append((char) memory.readByte(addr++));
+                    }
+                    System.err.println("*HELP " + s);
+                    break;
+            }
+            if (cpu.getA() == 1) {
+                cpu.setY(cpu.getY() + 1, true);
+            }
+        }));
         cpu.setVerboseSupplier(() -> false);
-        this.fdc.setCpu(cpu);
+        if (fdc != null) {
+            this.fdc.setCpu(cpu);
+        }
 
         this.runner = new Runner(
                 systemStatus,
@@ -146,31 +171,10 @@ public final class BBCMicro implements InterruptSource {
         addInterruptSource(systemVIA);
         addInterruptSource(userVIA);
         addInterruptSource(videoULA);
-        addInterruptSource(fdc);
+        if (fdc != null) {
+            addInterruptSource(fdc);
+        }
         cpu.setInterruptSource(this);
-    }
-
-    private static final class TestTask implements Runnable {
-
-        final Scheduler scheduler;
-        final ScheduledTask task;
-
-        int count;
-
-        public TestTask(Scheduler scheduler) {
-            this.scheduler = scheduler;
-            this.task = scheduler.newTask(this);
-            this.task.schedule(2_000_000);
-        }
-
-        @Override
-        public void run() {
-            System.err.println("Task: count = " + count);
-            count++;
-            if (count < 5) {
-                task.schedule(2_000_000);
-            }
-        }
     }
 
     private State savedState;

@@ -14,6 +14,10 @@ public interface Memory {
     int readByte(int address);
     void writeByte(int address, int value);
 
+    void installIntercept(int address, FetchIntercept intercept);
+    void removeIntercept(int address);
+    boolean processIntercepts(int address);
+
     default int readWord(int address) {
         Util.checkUnsignedWord(address);
         final int lo = readByte(address);

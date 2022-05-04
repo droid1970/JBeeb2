@@ -1,5 +1,6 @@
 package com.jbeeb.device;
 
+import com.jbeeb.memory.FetchIntercept;
 import com.jbeeb.util.*;
 
 import java.util.Objects;
@@ -60,6 +61,21 @@ public abstract class AbstractMemoryMappedDevice implements MemoryMappedDevice, 
             Util.log(getName() + ": write register " + Util.formatHexByte(address) + " = " + value, 0);
         }
         writeRegister(address - startAddress, value & 0xFF);
+    }
+
+    @Override
+    public void installIntercept(int address, FetchIntercept intercept) {
+        // Do nothing
+    }
+
+    @Override
+    public void removeIntercept(int address) {
+        // Do nothing
+    }
+
+    @Override
+    public boolean processIntercepts(int address) {
+        return false;
     }
 
     public abstract int readRegister(int index);

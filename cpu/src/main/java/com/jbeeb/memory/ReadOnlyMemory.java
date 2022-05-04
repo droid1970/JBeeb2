@@ -3,7 +3,7 @@ package com.jbeeb.memory;
 import java.io.*;
 import java.util.Arrays;
 
-public final class ReadOnlyMemory extends AbstractMemory {
+public class ReadOnlyMemory extends AbstractMemory {
     public ReadOnlyMemory(int start, int[] data) {
         super(start, data, true);
     }

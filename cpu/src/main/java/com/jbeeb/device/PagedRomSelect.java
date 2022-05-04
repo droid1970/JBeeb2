@@ -24,4 +24,8 @@ public final class PagedRomSelect extends AbstractMemoryMappedDevice {
     public int getSelectedSlot() {
         return slot;
     }
+
+    public void setSelectedSlot(int slot) {
+        this.slot = slot;
+    }
 }

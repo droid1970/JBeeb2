@@ -12,25 +12,29 @@ import java.util.Objects;
 
 public class FloppyDiskController extends AbstractMemoryMappedDevice implements InterruptSource {
 
+    public static final int DISC_TIME_SLICE = 16 * 16;
+
     private static final int UNDEFINED_INT = -1;
     private static final int[] UNDEFINED_ARRAY = new int[]{};
 
-    private volatile int status;
-    private volatile int curData;
-    private volatile int result;
-    private volatile int curCommand;
-    private volatile int curDrive;
-    private volatile int drvout;
-    private volatile int paramNum;
-    private volatile int paramReq;
-    private volatile boolean verify;
-    private volatile boolean written;
-    private int[] realTrack = new int[2];
-    private Disk[] drives = new Disk[2];
-    private volatile int phase;
+    private int status = 0;
+    private int curData = 0;
+    private int result = 0;
+    private int curCommand = 0xFF;
+    private int curDrive = 0;
+    private int drvout = 0;
+    private int paramNum = 0;
+    private int paramReq = 0;
+    private boolean verify = false;
+    private boolean written = false;
+    private final int[] realTrack = new int[2];
+    private final Disk[] drives = new Disk[2];
+    private int phase;
     private final boolean[] motorOn = new boolean[2];
-
-    private boolean nmiRequested;
+    private final int[] params = new int[8];
+    private final int[] curTrack = new int[2];
+    private int curSector = 0;
+    private int sectorsLeft = 0;
 
     private final Scheduler scheduler;
     private Cpu cpu;
@@ -38,7 +42,7 @@ public class FloppyDiskController extends AbstractMemoryMappedDevice implements 
     private final ScheduledTask[] motorSpinDownTask;
 
     public FloppyDiskController(SystemStatus systemStatus, final Scheduler scheduler, String name, int startAddress) {
-        super(systemStatus, name, startAddress, 8);
+        super(systemStatus, name, startAddress, 32);
         this.scheduler = Objects.requireNonNull(scheduler);
         this.callbackTask = scheduler.newTask(this::callback);
         this.motorSpinDownTask = new ScheduledTask[2];
@@ -50,6 +54,12 @@ public class FloppyDiskController extends AbstractMemoryMappedDevice implements 
             this.motorOn[1] = false;
             this.drvout &= ~0x80;
         });
+        this.drives[0] = new EmptyDisk(this);
+        this.drives[1] = new EmptyDisk(this);
+    }
+
+    public Scheduler getScheduler() {
+        return scheduler;
     }
 
     public void setCpu(final Cpu cpu) {
@@ -58,6 +68,9 @@ public class FloppyDiskController extends AbstractMemoryMappedDevice implements 
 
     private void nmi() {
         cpu.requestNMI((status & 8) != 0);
+//        if ((status & 8) != 0) {
+//            cpu.requestNMI((status & 8) != 0);
+//        }
     }
 
     public void load(final int driveIndex, final File file) throws IOException {
@@ -74,9 +87,7 @@ public class FloppyDiskController extends AbstractMemoryMappedDevice implements 
 
     @Override
     public boolean isNMI() {
-        final boolean nmi = (status & 8) != 0;
-        //status &= ~8;
-        return nmi;
+        return (status & 8) != 0;
     }
 
     @Override
@@ -84,98 +95,31 @@ public class FloppyDiskController extends AbstractMemoryMappedDevice implements 
         int ret = 0;
         switch (index & 0x7) {
             case 0:
-                ret = status & 0xFF;
+                ret = status;
                 break;
             case 1:
                 this.status &= ~0x18;
-                ret = result & 0xFF;
                 nmi();
+                ret = result;
                 break;
             case 4:
             case 5:
             case 6:
             case 7:
                 this.status &= ~0x0C;
-                ret = this.curData;
                 nmi();
+                ret = this.curData;
                 break;
         }
         Util.log("FDC: readRegister " + index + " value = " + Util.formatHexByte(ret), 0);
         return ret;
     }
 
-    @Override
-    public void writeRegister(int index, int value) {
-        Util.log("FDC: writeRegister " + index + " value = " + Util.formatHexByte(value), 0);
-        switch (index & 7) {
-            case 0:
-                this.handleCommand(value);
-                break;
-            case 1:
-                this.parameter(value);
-                break;
-            case 2:
-                this.reset(value);
-                break;
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-                this.data(value);
-                break;
-        }
-    }
-
-    private void handleCommand(int val) {
-        if ((this.status & 0x80) != 0) {
-            return;
-        }
-
-        setCurCommand(val & 0x3f);
-        if (getCurCommand() == 0x17) {
-            setCurCommand(0x13);
-        }
-        this.curDrive = ((val & 0x80) != 0) ? 1 : 0;
-        if (getCurCommand() < 0x2c) {
-            this.drvout &= ~(0x80 | 0x40);
-            this.drvout |= (val & (0x80 | 0x40));
-        }
-        this.paramNum = 0;
-        final Integer num = this.numParams(getCurCommand());
-        this.paramReq = (num == null) ? 0 : num;
-        this.status = 0x80;
-        if (num != null) {
-            if (getCurCommand() == 0x2c) {
-                // read drive status
-                this.status = 0x10;
-                this.result = 0x80;
-                this.result |= ((this.realTrack[this.curDrive] != 0) ? 0 : 2);
-                this.result |= (this.drives[this.curDrive].writeProt() ? 0x08 : 0);
-                if ((this.drvout & 0x40) != 0) {
-                    this.result |= 0x04;
-                }
-                if ((this.drvout & 0x80) != 0) {
-                    this.result |= 0x40;
-                }
-            } else {
-                this.result = 0x18;
-                this.status = 0x18;
-                nmi();
-            }
-        }
-    }
-
-    private void reset(final int cmd) {
-
-    }
-
     private void error(int result) {
         this.result = result;
         this.status = 0x18;
         nmi();
-        if (callbackTask != null) {
-            callbackTask.cancel();
-        }
+        callbackTask.cancel();
         this.setspindown();
     }
 
@@ -214,6 +158,10 @@ public class FloppyDiskController extends AbstractMemoryMappedDevice implements 
         return this.curData;
     }
 
+    void discFinishRead() {
+        callbackTask.reschedule(DISC_TIME_SLICE);
+    }
+
     private static final Map<Integer, Integer> PARAMS_MAP = new HashMap<>();
     static {
         PARAMS_MAP.put(0x35, 4);
@@ -228,7 +176,48 @@ public class FloppyDiskController extends AbstractMemoryMappedDevice implements 
         PARAMS_MAP.put(0x23, 5);
     }
 
-    private int[] curTrack = new int[2];
+    private Integer numParams(int command) {
+        return PARAMS_MAP.get(command);
+    }
+
+    private void command(int val) {
+        if ((this.status & 0x80) != 0) {
+            return;
+        }
+
+        setCurCommand(val & 0x3f);
+        if (curCommand == 0x17) {
+            setCurCommand(0x13);
+        }
+        this.curDrive = ((val & 0x80) != 0) ? 1 : 0;
+        if (curCommand < 0x2c) {
+            this.drvout &= ~(0x80 | 0x40);
+            this.drvout |= (val & (0x80 | 0x40));
+        }
+        this.paramNum = 0;
+        final Integer num = this.numParams(curCommand);
+        this.paramReq = (num == null) ? 0 : num;
+        this.status = 0x80;
+        if (num != null) {
+            if (curCommand == 0x2c) {
+                // read drive status
+                this.status = 0x10;
+                this.result = 0x80;
+                this.result |= ((this.realTrack[this.curDrive] != 0) ? 0 : 2);
+                this.result |= (this.drives[this.curDrive].writeProt() ? 0x08 : 0);
+                if ((this.drvout & 0x40) != 0) {
+                    this.result |= 0x04;
+                }
+                if ((this.drvout & 0x80) != 0) {
+                    this.result |= 0x40;
+                }
+            } else {
+                this.result = 0x18;
+                this.status = 0x18;
+                nmi();
+            }
+        }
+    }
 
     private void writeSpecial(int reg, int val) {
         this.status = 0;
@@ -273,11 +262,9 @@ public class FloppyDiskController extends AbstractMemoryMappedDevice implements 
         }
     }
 
-    private static final int DiscTimeSlice = 16 * 16;
-
     private void spinup() {
 
-        int time = DiscTimeSlice;
+        int time = DISC_TIME_SLICE;
 
         if (!this.motorOn[this.curDrive]) {
             // Half a second.
@@ -286,16 +273,10 @@ public class FloppyDiskController extends AbstractMemoryMappedDevice implements 
             //this.noise.spinUp();
         }
 
-        //int time = 2_000_000 / 2;
         this.callbackTask.reschedule(time);
-        //this.callbackTask.reschedule(time);
         this.motorSpinDownTask[this.curDrive].cancel();
         this.phase = 0;
     }
-
-    private final long TICK_NANOS = 500L;
-
-
 
     private void setspindown() {
         if (this.motorOn[this.curDrive]) {
@@ -315,22 +296,28 @@ public class FloppyDiskController extends AbstractMemoryMappedDevice implements 
         final int diff = this.drives[this.curDrive].seek(realTrack);
         // Let disc noises overlap by ~10%
         //final int seekLen = (this.noise.seek(diff) * 0.9 * this.cpu.peripheralCyclesPerSecond) | 0;
-        this.callbackTask.reschedule(DiscTimeSlice);//2_000_000);//DiscTimeSlice);//Math.max(DiscTimeSlice, 10_000));
+        this.callbackTask.reschedule(250_000);//2_000_000);//DiscTimeSlice);//Math.max(DiscTimeSlice, 10_000));
         this.phase = 1;
     }
 
     private void prepareSectorIO(int track, int sector, int numSectors) {
-        if (numSectors != UNDEFINED_INT) this.sectorsLeft = numSectors & 31;
-        if (sector != UNDEFINED_INT) this.curSector = sector;
+        if (numSectors != UNDEFINED_INT) {
+            this.sectorsLeft = numSectors & 31;
+        }
+        if (sector != UNDEFINED_INT) {
+            this.curSector = sector;
+        }
         this.spinup(); // State: spinup -> seek.
     }
 
-    private int[] params= new int[10];
-
     private void parameter(int val) {
-        if (this.paramNum < 5) this.params[this.paramNum++] = val;
-        if (this.paramNum != this.paramReq) return;
-        switch (getCurCommand()) {
+        if (this.paramNum < 5) {
+            this.params[this.paramNum++] = val;
+        }
+        if (this.paramNum != this.paramReq) {
+            return;
+        }
+        switch (curCommand) {
             case 0x35: // Specify.
                 this.status = 0;
                 break;
@@ -362,15 +349,38 @@ public class FloppyDiskController extends AbstractMemoryMappedDevice implements 
         }
     }
 
+    private void reset(final int cmd) {
+
+    }
+
     private void data(int val) {
         this.curData = val;
         this.written = true;
         this.status &= ~0x0c;
+        // TODO: Should nmi() clear as well as set?
         nmi();
     }
 
-    private Integer numParams(int command) {
-        return PARAMS_MAP.get(command);
+    @Override
+    public void writeRegister(int index, int value) {
+        Util.log("FDC: writeRegister " + index + " value = " + Util.formatHexByte(value), 0);
+        switch (index & 7) {
+            case 0:
+                this.command(value);
+                break;
+            case 1:
+                this.parameter(value);
+                break;
+            case 2:
+                this.reset(value);
+                break;
+            case 4:
+            case 5:
+            case 6:
+            case 7:
+                this.data(value);
+                break;
+        }
     }
 
     private boolean density() {
@@ -389,20 +399,9 @@ public class FloppyDiskController extends AbstractMemoryMappedDevice implements 
         this.verify = false;
     }
 
-    void discFinishRead() {
-        callbackTask.reschedule(DiscTimeSlice);
-    }
-
-    private volatile int curSector;
-    private volatile int sectorsLeft;
-
     private void setCurCommand(final int n) {
         this.curCommand = n;
         Util.log("FDC : curCommand = " + Util.formatHexByte(n), 0);
-    }
-
-    private int getCurCommand() {
-        return curCommand;
     }
 
     private void callback() {
@@ -413,7 +412,7 @@ public class FloppyDiskController extends AbstractMemoryMappedDevice implements 
             return;
         }
 
-        switch (getCurCommand()) {
+        switch (curCommand) {
             case 0x29: // Seek
                 this.curTrack[this.curDrive] = this.params[0];
                 this.done();
