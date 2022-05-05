@@ -301,6 +301,12 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
         }
     }
 
+//    private final Map<Integer, Runnable> returnTo = new HashMap<>();
+//
+//    public void onReturnTo(final int address, Runnable runnable) {
+//        returnTo.put(address, runnable);
+//    }
+
     private void execute() {
 
         switch (instruction) {
@@ -343,7 +349,14 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
                     incSP();
                 });
                 queue(() -> setPCH(popByteNoIncrement()));
-                queue(this::incPC);
+                queue(() -> {
+//                    if (returnTo.containsKey(pc)) {
+//                        returnTo.get(pc).run();
+//                        returnTo.remove(pc);
+//                    }
+                    incPC();
+                    //System.err.println("RTS to " + Util.formatHexWord(pc));
+                });
                 return;
             }
             case PHA: {
@@ -1014,6 +1027,10 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     public int popByteNoIncrement() {
         checkSpInBounds(sp);
         return memory.readByte(STACK_START + sp);
+    }
+
+    public int peekByte(int offset) {
+        return memory.readByte(STACK_START + sp + offset);
     }
 
     public String toString() {

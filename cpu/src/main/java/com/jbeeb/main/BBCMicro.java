@@ -1,6 +1,9 @@
 package com.jbeeb.main;
 
+import com.jbeeb.assembler.Disassembler;
 import com.jbeeb.cpu.Cpu;
+import com.jbeeb.cpu.Flag;
+import com.jbeeb.cpu.InstructionSet;
 import com.jbeeb.device.*;
 import com.jbeeb.disk.FloppyDiskController;
 import com.jbeeb.localfs.FilingSystemROM;
@@ -10,6 +13,7 @@ import com.jbeeb.util.*;
 
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
@@ -49,6 +53,10 @@ public final class BBCMicro implements InterruptSource {
 
     public Memory getRam() {
         return ram;
+    }
+
+    public SystemVIA getSystemVIA() {
+        return systemVIA;
     }
 
     public BBCMicro() throws Exception {
@@ -169,6 +177,58 @@ public final class BBCMicro implements InterruptSource {
             addInterruptSource(fdc);
         }
         cpu.setInterruptSource(this);
+//        scheduler.newTask(() -> {
+//            System.err.println("INSV = " + Util.formatHexWord(memory.readWord(0x22a)));
+//        }).schedule(2_000_000);
+//        scheduler.newTask(() -> {
+//            try {
+//                final Disassembler dis = new Disassembler(new InstructionSet(), memory);
+//                dis.setPC(0xfff4);
+//                for (int i = 0; i < 10; i++) {
+//                    System.err.println(dis.disassemble());
+//                }
+//            } catch (Exception ex) {
+//                ex.printStackTrace();
+//            }
+//        }).schedule(2_000_000);
+
+        final int KEYV = 0xEF02;
+        final int INSV = 0xE4B3;
+
+        if (true) memory.installIntercept(INSV, new AtomicFetchIntercept(cpu, () -> {
+            System.err.println("INSV: A = " + cpu.getA() + " X = " + cpu.getX());
+//            final boolean C = cpu.isFlagSet(Flag.CARRY);
+//            final boolean V = cpu.isFlagSet(Flag.OVERFLOW);
+//            if (!C && !V) {
+//                final int retLO = cpu.peekByte(7);
+//                final int retHI = cpu.peekByte(8);
+//                final int ret = (retLO & 0xFF) | ((retHI & 0xFF) << 8);
+//                for (int i = 0; i < 10; i++) {
+//                    System.err.println("stack " + i + " = " + Util.formatHexByte(cpu.peekByte(i)));
+//                }
+//                //cpu.onReturnTo(ret, () -> System.err.println("KEYV - returned with SHIFT pressed = " + cpu.isFlagSet(Flag.NEGATIVE) + " CTRL pressed = " + cpu.isFlagSet(Flag.OVERFLOW)));
+////                final int retLO = cpu.peekByte(0);
+////                final int retHI = cpu.peekByte(1);
+////                final int ret = (retLO & 0xFF) | ((retHI & 0xFF) << 8);
+////                cpu.onReturnTo(ret  - 2, () -> System.err.println("returned"));
+////                memory.installIntercept(ret + 2, new AtomicFetchIntercept(cpu, () -> System.err.println("ret0")), false);
+//                System.err.println("KEYV - test SHIFT/CTRL");
+//            } else if (C && !V) {
+////                final int retLO = cpu.peekByte(7);
+////                final int retHI = cpu.peekByte(8);
+////                final int ret = (retLO & 0xFF) | ((retHI & 0xFF) << 8);
+//////                for (int i = 0; i < 10; i++) {
+//////                    System.err.println("stack " + i + " = " + Util.formatHexByte(cpu.peekByte(i)));
+//////                }
+////                cpu.onReturnTo(ret, () -> System.err.println("KEYV - returned with key pressed = " + ((cpu.getX() & 0x80) != 0)));
+////                System.err.println("KEYV - scan keyboard (OSBYTE &79): code = " + Util.formatHexByte(cpu.getX() & 0x7f) + " scan = " + ((cpu.getX() & 0x80) != 0) + " ret = " + Util.formatHexWord(ret));
+////                memory.installIntercept(ret, new AtomicFetchIntercept(cpu, () -> System.err.println("ret0")), false);
+//            } else if (!C && V) {
+//                System.err.println("KEYV - key pressed interrupt");
+//            } else {
+//                System.err.println("KEYV - timer interrupt entry");
+//            }
+        }), false);
     }
 
     private State savedState;

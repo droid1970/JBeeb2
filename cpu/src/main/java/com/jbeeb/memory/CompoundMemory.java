@@ -50,8 +50,8 @@ public final class CompoundMemory implements Memory {
     }
 
     @Override
-    public void installIntercept(int address, FetchIntercept intercept) {
-        getRegion(address).installIntercept(address, intercept);
+    public void installIntercept(int address, FetchIntercept intercept, boolean addRTS) {
+        getRegion(address).installIntercept(address, intercept, addRTS);
     }
 
     @Override

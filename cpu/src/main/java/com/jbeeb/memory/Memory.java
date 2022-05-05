@@ -14,7 +14,7 @@ public interface Memory {
     int readByte(int address);
     void writeByte(int address, int value);
 
-    void installIntercept(int address, FetchIntercept intercept);
+    void installIntercept(int address, FetchIntercept intercept, boolean addRTS);
     void removeIntercept(int address);
     boolean processIntercepts(int address);
 

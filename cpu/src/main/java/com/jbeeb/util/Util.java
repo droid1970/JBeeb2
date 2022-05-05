@@ -2,7 +2,6 @@ package com.jbeeb.util;
 
 import com.jbeeb.assembler.Assembler;
 import com.jbeeb.cpu.Cpu;
-import com.jbeeb.cpu.CpuUtil;
 import com.jbeeb.cpu.Flag;
 import com.jbeeb.cpu.InstructionSet;
 import com.jbeeb.disk.DiskDetails;
@@ -232,12 +231,7 @@ public final class Util {
     }
 
     public static String padLeft(final String s, int width) {
-        final StringBuilder sb = new StringBuilder();
-        sb.append(s);
-        while (sb.length() < width) {
-            sb.append(" ");
-        }
-        return sb.toString();
+        return padLeft(s, width, ' ');
     }
 
     public static String pad0(final String s, final int width) {
@@ -355,7 +349,7 @@ public final class Util {
 
     public static void run(final Cpu cpu, final Memory memory, final File file, final int loadAddress, final int execAddress) throws IOException {
         if (file.exists()) {
-            final int[] data = readFile(file);
+            final int[] data = readFileAsInts(file);
             for (int i = 0; i < data.length; i++) {
                 memory.writeByte(loadAddress + i, data[i]);
             }
@@ -367,14 +361,14 @@ public final class Util {
 
     public static void load(final Cpu cpu, final Memory memory, final File file, final int loadAddress) throws IOException {
         if (file.exists()) {
-            final int[] data = readFile(file);
+            final int[] data = readFileAsInts(file);
             for (int i = 0; i < data.length; i++) {
                 memory.writeByte(loadAddress + i, data[i]);
             }
         }
     }
 
-    public static int[] readFile(final File file) throws IOException {
+    public static int[] readFileAsInts(final File file) throws IOException {
         final long size = file.length();
         final int[] ret = new int[(int) size];
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))) {
@@ -385,6 +379,23 @@ public final class Util {
                     break;
                 }
                 ret[i] = b & 0xFF;
+                i++;
+            }
+        }
+        return ret;
+    }
+
+    public static byte[] readFileAsbytes(final File file) throws IOException {
+        final long size = file.length();
+        final byte[] ret = new byte[(int) size];
+        try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))) {
+            int i = 0;
+            while (true) {
+                final int b = in.read();
+                if (b < 0) {
+                    break;
+                }
+                ret[i] = (byte) b;
                 i++;
             }
         }
@@ -446,5 +457,15 @@ public final class Util {
             }
         }
         return bytes;
+    }
+
+    public static String firstElementOf(String s, final String separator) {
+        if (s == null || s.isEmpty()) {
+            return s;
+        }
+        if (s.contains(separator)) {
+            s = s.substring(0, s.indexOf(separator));
+        }
+        return s;
     }
 }

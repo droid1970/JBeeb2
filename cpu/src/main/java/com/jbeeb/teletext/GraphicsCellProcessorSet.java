@@ -17,18 +17,23 @@ final class GraphicsCellProcessorSet extends AbstractCellProcessorSet {
         }
 
         // skip 35 (which is the HASH character)
-        code++;
-        bits++;
         registerText(35,
                 HASH
         );
 
+        code = 36;
+        bits = 4;
         for (int i = 0; i < 28; i++) {
             registerGraphics(code++, bits++);
         }
 
-        code = 95;
-        for (int i = 0; i < 32; i++) {
+        // Is there a bug here?
+        registerGraphics(95, 3);
+        registerGraphics(96, 32);
+
+        code = 97;
+        bits = 33;
+        for (int i = 0; i < 31; i++) {
             registerGraphics(code++, bits++);
         }
 

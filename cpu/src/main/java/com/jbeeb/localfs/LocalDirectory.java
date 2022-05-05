@@ -1,6 +1,7 @@
 package com.jbeeb.localfs;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -14,6 +15,26 @@ public final class LocalDirectory extends LocalFileElement implements LfsElement
     }
 
     @Override
+    public LfsElementType getType() {
+        return LfsElementType.DIRECTORY;
+    }
+
+    @Override
+    public int getLoadAddress() {
+        return 0;
+    }
+
+    @Override
+    public int getExecAddress() {
+        return 0;
+    }
+
+    @Override
+    public int length() {
+        return 0;
+    }
+
+    @Override
     public List<? extends LfsElement> list() {
         final File[] files = file().listFiles();
         return (files == null) ?
@@ -22,8 +43,8 @@ public final class LocalDirectory extends LocalFileElement implements LfsElement
     }
 
     @Override
-    public Optional<? extends LfsElement> findAny(final String name) {
-        return list().stream().filter(e -> Objects.equals(e.getName().toUpperCase(), name.toUpperCase())).findFirst();
+    public RandomAccessData getData() throws IOException {
+        throw new IOException("Cannot open directory for read");
     }
 
     @Override

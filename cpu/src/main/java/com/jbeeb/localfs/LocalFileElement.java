@@ -34,7 +34,7 @@ public abstract class LocalFileElement implements LfsElement {
             if (file.getName().toLowerCase().endsWith(".ssd")) {
                 try {
                     final LfsElement parent = LocalFileElement.of(file.getParentFile());
-                    return new DiskImage(parent, file);
+                    return DiskImage.of(parent, file);
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }

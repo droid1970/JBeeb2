@@ -18,9 +18,8 @@ final class GraphicsCellProcessor implements CellProcessor {
 
     private static void paintGraphics(final Graphics2D g, final int bits, final boolean gap, final int x, final int y, final int width, final int height) {
         final int pw = width / 2;
-        final int ph = (int) Math.ceil(height / 3.0);
-        final int gw = gap ? 1 : 0;
-        final int gh = gap ? 1 : 0;
+        final int gw = gap ? 2 : 0;
+        final int gh = gap ? 2 : 0;
 
         if ((bits & 1) != 0) {
             g.fillRect(x, y, pw - gw, 6 - gh);

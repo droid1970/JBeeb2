@@ -75,7 +75,7 @@ public class FloppyDiskController extends AbstractMemoryMappedDevice implements 
 
     public void load(final int driveIndex, final File file) throws IOException {
         final String name = file.getName();
-        final int[] data = Util.readFile(file);
+        final int[] data = Util.readFileAsInts(file);
         final Disk disk = new BaseDisk(this, scheduler, name, data, null);
         drives[driveIndex] = disk;
     }

@@ -64,7 +64,7 @@ public abstract class AbstractMemoryMappedDevice implements MemoryMappedDevice, 
     }
 
     @Override
-    public void installIntercept(int address, FetchIntercept intercept) {
+    public void installIntercept(int address, FetchIntercept intercept, boolean addRTS) {
         // Do nothing
     }
 

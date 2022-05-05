@@ -45,9 +45,6 @@ public abstract class AbstractMemory implements Memory {
     @Override
     public void writeByte(int address, int value) {
         if (!readOnly) {
-            if (address == 0x212) {
-                System.err.println("written " + value + " to 212");
-            }
             checkWriteable();
             Util.checkUnsignedByte(value);
             memory[computeIndex(address)] = value;
@@ -59,13 +56,14 @@ public abstract class AbstractMemory implements Memory {
     }
 
     @Override
-    public void installIntercept(int address, FetchIntercept intercept) {
+    public void installIntercept(int address, FetchIntercept intercept, boolean addRTS) {
         if (intercepts == null) {
             intercepts = new HashMap<>();
         }
         intercepts.put(address, intercept);
-        writeByteUnsafe(address, InstructionSet.RTS_OPCODE);
-        Util.log("Intercept added at address " + Util.formatHexWord(address), 0);
+        if (addRTS) {
+            writeByteUnsafe(address, InstructionSet.RTS_OPCODE);
+        }
     }
 
     @Override

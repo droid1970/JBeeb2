@@ -1,18 +1,22 @@
 package com.jbeeb.localfs;
 
+import com.jbeeb.util.LruCache;
+
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public final class DiskImage implements LfsElement{
+public final class DiskImage implements LfsElement {
+
+    private static final LruCache<File, DiskImage> CACHE = new LruCache<>(10);
 
     private final LfsElement parent;
     private final Map<FileMetadata, byte[]> files;
     private final ByteBuffer data;
 
-    public DiskImage(final LfsElement parent, final File file) throws IOException {
+    private DiskImage(final LfsElement parent, final File file) throws IOException {
         this.parent = parent;
         final byte[] bytes = new byte[(int) file.length()];
         try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
@@ -26,7 +30,17 @@ public final class DiskImage implements LfsElement{
         this.files = getFiles(data);
     }
 
+    public synchronized static DiskImage of(final LfsElement parent, final File file) throws IOException {
+        DiskImage img = CACHE.get(file);
+        if (img == null) {
+            img = new DiskImage(parent, file);
+            CACHE.put(file, img);
+        }
+        return img;
+    }
+
     private static final class FileElement implements LfsElement {
+
         private final LfsElement parent;
         private final FileMetadata metadata;
         private final byte[] data;
@@ -43,8 +57,42 @@ public final class DiskImage implements LfsElement{
         }
 
         @Override
+        public LfsElementType getType() {
+            return LfsElementType.FILE;
+        }
+
+        @Override
+        public int getLoadAddress() {
+            return metadata.loadAddress;
+        }
+
+        @Override
+        public int getExecAddress() {
+            return metadata.execAddress;
+        }
+
+        @Override
+        public int length() {
+            return data.length;
+        }
+
+        @Override
         public Optional<? extends LfsElement> getParent() {
             return Optional.of(parent);
+        }
+
+        @Override
+        public boolean matchesName(String name) {
+            if (LfsElement.super.matchesName(name)) {
+                return true;
+            }
+
+            name = name.toUpperCase();
+            if (name.startsWith(metadata.directory.toUpperCase() + ".")) {
+                name = name.substring(name.indexOf(".") + 1);
+                return LfsElement.super.matchesName(name);
+            }
+            return false;
         }
 
         @Override
@@ -56,11 +104,36 @@ public final class DiskImage implements LfsElement{
         public boolean isDirectory() {
             return false;
         }
+
+        @Override
+        public RandomAccessData getData() throws IOException {
+            return new ByteRandomAccessData(this.data);
+        }
     }
 
     @Override
     public String getName() {
         return getDiskName();
+    }
+
+    @Override
+    public LfsElementType getType() {
+        return LfsElementType.IMAGE;
+    }
+
+    @Override
+    public int getLoadAddress() {
+        return 0;
+    }
+
+    @Override
+    public int getExecAddress() {
+        return 0;
+    }
+
+    @Override
+    public int length() {
+        return 0;
     }
 
     @Override
@@ -70,12 +143,21 @@ public final class DiskImage implements LfsElement{
 
     @Override
     public List<? extends LfsElement> list() {
-        return files.keySet().stream().map(f -> new FileElement(this, f, null)).collect(Collectors.toList());
+        final List<LfsElement> ret = new ArrayList<>(files.size());
+        for (Map.Entry<FileMetadata, byte[]> e : files.entrySet()) {
+            ret.add(new FileElement(this, e.getKey(), e.getValue()));
+        }
+        return ret;
     }
 
     @Override
     public boolean isDirectory() {
         return true;
+    }
+
+    @Override
+    public RandomAccessData getData() throws IOException {
+        throw new IOException("Cannot open directory for read");
     }
 
     private static final class FileMetadata {
@@ -132,7 +214,16 @@ public final class DiskImage implements LfsElement{
             final boolean locked = (nameBytes[7] & 0x80) != 0;
             nameBytes[7] &= 0x7F;
             final String directory = new String(nameBytes, 7, 1);
-            ret.put(new FileMetadata(directory, name, loadAddress, execAddress, length, startSector), null);
+            final FileMetadata fileMetadata = new FileMetadata(directory, name, loadAddress, execAddress, length, startSector);
+            final byte[] fileData = new byte[length];
+            try {
+                data.position(256 * startSector);
+                data.get(fileData);
+                ret.put(fileMetadata, fileData);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                int x = 1;
+            }
         }
         return ret;
     }

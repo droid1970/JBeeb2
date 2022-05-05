@@ -43,8 +43,8 @@ public final class PagedROM implements Memory {
     }
 
     @Override
-    public void installIntercept(int address, FetchIntercept intercept) {
-        roms[selector.getSelectedSlot()].installIntercept(address, intercept);
+    public void installIntercept(int address, FetchIntercept intercept, boolean addRTS) {
+        roms[selector.getSelectedSlot()].installIntercept(address, intercept, addRTS);
     }
 
     @Override

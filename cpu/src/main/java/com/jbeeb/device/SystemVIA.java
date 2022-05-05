@@ -82,6 +82,15 @@ public class SystemVIA extends VIA {
         }
     }
 
+    public final void clearKeys() {
+        for (int i = 0; i < keyDown.length; i++) {
+            for (int j = 0; j < keyDown[i].length; j++) {
+                keyDown[i][j] = false;
+            }
+        }
+        updateKeys();
+    }
+
     public final void keyDown(final int keycode, final boolean shiftDown) {
         keyDown(keyMap.get(keycode, shiftDown));
     }
@@ -116,6 +125,7 @@ public class SystemVIA extends VIA {
         }
         return false;
     }
+
     private void updateKeys() {
         final int numcols = 10;
         if ((IC32 & 8) != 0) {

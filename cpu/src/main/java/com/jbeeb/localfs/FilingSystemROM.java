@@ -8,9 +8,14 @@ import com.jbeeb.memory.Memory;
 import com.jbeeb.memory.ReadOnlyMemory;
 import com.jbeeb.util.Util;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class FilingSystemROM extends ReadOnlyMemory {
 
@@ -54,10 +59,16 @@ public class FilingSystemROM extends ReadOnlyMemory {
         void run(final String[] args);
     }
 
-    private LfsElement currentDirectory = new LocalDirectory(JavaBeeb.FILES);
+    private LfsElement currentDirectory;
 
     public FilingSystemROM(final String name, final String copyright) {
         super(0x8000, createData(name, copyright));
+        try {
+            currentDirectory = LocalFileElement.of(new File(JavaBeeb.FILES, "images"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            currentDirectory = LocalFileElement.of(JavaBeeb.FILES);
+        }
     }
 
     private static int[] createData(final String name, final String copyright) {
@@ -89,12 +100,12 @@ public class FilingSystemROM extends ReadOnlyMemory {
 
     public void initialise(final Memory memory, final Cpu cpu) {
         installIntercept(cpu, SERVICE_ENTRY, () -> serviceRoutine(memory, cpu));
-        installIntercept(cpu, OSFILE_ENTRY, () -> osfile(cpu));
-        installIntercept(cpu, OSARGS_ENTRY, () -> osargs(cpu));
-        installIntercept(cpu, OSBGET_ENTRY, () -> osbget(cpu));
-        installIntercept(cpu, OSBPUT_ENTRY, () -> osbput(cpu));
-        installIntercept(cpu, OSGBPB_ENTRY, () -> osgbpb(cpu));
-        installIntercept(cpu, OSFIND_ENTRY, () -> osfind(cpu));
+        installIntercept(cpu, OSFILE_ENTRY, () -> osfile(memory, cpu));
+        installIntercept(cpu, OSARGS_ENTRY, () -> osargs(memory, cpu));
+        installIntercept(cpu, OSBGET_ENTRY, () -> osbget(memory, cpu));
+        installIntercept(cpu, OSBPUT_ENTRY, () -> osbput(memory, cpu));
+        installIntercept(cpu, OSGBPB_ENTRY, () -> osgbpb(memory, cpu));
+        installIntercept(cpu, OSFIND_ENTRY, () -> osfind(memory, cpu));
         installIntercept(cpu, OSFSC_ENTRY, () -> osfsc(memory, cpu));
 
         osfscCommandHandlers.put(LS_COMMAND_NAME, (args) -> listFiles(cpu));
@@ -104,7 +115,7 @@ public class FilingSystemROM extends ReadOnlyMemory {
     }
 
     private void installIntercept(final Cpu cpu, final int address, final Runnable runnable) {
-        installIntercept(address, new AtomicFetchIntercept(cpu, runnable));
+        installIntercept(address, new AtomicFetchIntercept(cpu, runnable), true);
     }
 
     private void initialiseFilesystem(final Memory memory, final Cpu cpu) {
@@ -123,14 +134,33 @@ public class FilingSystemROM extends ReadOnlyMemory {
         CpuUtil.writeExtendedVector(memory, cpu, OSFSC_VECTOR, OSFSC_ENTRY, romNumber);
     }
 
-    private void listFiles(final Cpu cpu) {
-        final List<? extends LfsElement> listing = currentDirectory.list();
-        if (listing.isEmpty()) {
-            CpuUtil.newlineMessage(cpu, "Directory is empty");
+    private static final NumberFormat SIZE_FORMAT = new DecimalFormat("#,###");
+
+    private static String formatFileSize(final int fileSize, final int kbSize) {
+        if (fileSize >= kbSize) {
+            int kb = (int) Math.round((double) fileSize / kbSize);
+            return Util.padLeft(SIZE_FORMAT.format(kb), 10) + " Kb";
         } else {
-            for (LfsElement e : currentDirectory.list()) {
-                CpuUtil.println(cpu, e.getName());
-            }
+            return Util.padLeft(SIZE_FORMAT.format(fileSize), 10) + " bytes";
+        }
+    }
+
+    private void listFiles(final Cpu cpu) {
+        final List<? extends LfsElement> list = currentDirectory.list();
+        final List<? extends LfsElement> dirs = list.stream().filter(LfsElement::isDirectory).collect(Collectors.toList());
+        final List<? extends LfsElement> files = list.stream().filter(LfsElement::isFile).collect(Collectors.toList());
+        for (LfsElement e : dirs) {
+            CpuUtil.println(cpu, Util.pad(e.getName(), 16) + " - " + e.getType().getDescription());
+        }
+        dirs.sort(Comparator.comparing(LfsElement::getName));
+        files.sort(Comparator.comparing(LfsElement::getName));
+
+        if (!dirs.isEmpty()) {
+            CpuUtil.osnewl(cpu);
+        }
+
+        for (LfsElement e : files) {
+            CpuUtil.println(cpu, Util.pad(e.getName(), 16) + " - " + formatFileSize(e.length(), 1000));
         }
     }
 
@@ -184,7 +214,7 @@ public class FilingSystemROM extends ReadOnlyMemory {
     }
 
     private void serviceRoutine(final Memory memory, final Cpu cpu) {
-        System.err.println("service routine: A = " + cpu.getA() + " X = " + cpu.getX() + " Y = " + cpu.getY());
+        //System.err.println("service routine: A = " + cpu.getA() + " X = " + cpu.getX() + " Y = " + cpu.getY());
         switch (cpu.getA()) {
             case 0: // NOP
             case 1: // Absolute workspace claim
@@ -250,27 +280,96 @@ public class FilingSystemROM extends ReadOnlyMemory {
 
     }
 
-    private void osfile(final Cpu cpu) {
-        System.err.println("OSFILE");
+    private static final class osfileParameters {
+        final String fileName;
+        final int loadAddress;
+        final int execAddress;
+        final int saveStartAddress;
+        final int saveEndAddress;
+
+        osfileParameters(final Memory memory, final int x, final int y) {
+            final int address = (x & 0xFF) | ((y & 0xFF) << 8);
+            fileName = CpuUtil.readStringAbsolute(memory, memory.readWord(address));
+            loadAddress = memory.readWord(address + 2) | (memory.readWord(address + 4) << 16);
+            execAddress = memory.readWord(address + 6) | (memory.readWord(address + 8) << 16);
+            saveStartAddress = memory.readWord(address + 10) | (memory.readWord(address + 12) << 16);
+            saveEndAddress = memory.readWord(address + 14) | (memory.readWord(address + 16) << 16);
+        }
+
+        public String toString() {
+            return "filename = " + fileName + " load = " + Util.formatHexWord(loadAddress & 0xFFFF) + " exec = " + Util.formatHexWord(execAddress & 0xFFFF);
+        }
     }
 
-    private void osargs(final Cpu cpu) {
+    private void fileNotFound(final Cpu cpu, final String filename) {
+        CpuUtil.newlineMessage(cpu, "File not found - " + filename);
+    }
+
+    private void osfile(final Memory memory, final Cpu cpu) {
+        try {
+            final osfileParameters parms = new osfileParameters(memory, cpu.getX(), cpu.getY());
+            System.err.println("OSFILE: A = " + cpu.getA() + " parms = " + parms);
+            String effectiveFilename = parms.fileName;
+            if (effectiveFilename.contains(" ")) {
+                effectiveFilename = effectiveFilename.substring(0, effectiveFilename.indexOf(" "));
+            }
+            final LfsElement file = findFile(parms.fileName);
+            if (file == null) {
+                fileNotFound(cpu, parms.fileName);
+                return;
+            }
+            final int fileLoadAddress = file.getLoadAddress();
+            final int fileExecAddress = file.getExecAddress();
+
+            switch (cpu.getA()) {
+                case 255: {
+                    final int effectiveLoadAddress = (((parms.execAddress & 0xFF) == 0) ? parms.loadAddress : fileLoadAddress) & 0xFFFF;
+                    load(memory, file, effectiveLoadAddress);
+                    break;
+                }
+
+                default:
+                    // Not implemented/supported
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            CpuUtil.newlineMessage(cpu, "error - " + ex.getMessage());
+        }
+    }
+
+    private LfsElement findFile(final String fileName) {
+        return currentDirectory.findAny(fileName.replace("\"", "")).orElse(null);
+    }
+
+    private void load(final Memory memory, final LfsElement file, final int loadAddress) throws IOException {
+        final RandomAccessData fileData = file.getData();
+        for (int i = 0; i < fileData.length(); i++) {
+            memory.writeByte(loadAddress + i, (fileData.get() & 0xFF));
+        }
+    }
+
+    private void run(final Memory memory, final Cpu cpu, final LfsElement file, final int loadAddress, final int execAddress) throws IOException {
+        load(memory, file, loadAddress);
+        cpu.setPC(execAddress & 0xFFFF);
+    }
+
+    private void osargs(final Memory memory, final Cpu cpu) {
         System.err.println("OSARGS");
     }
 
-    private void osbget(final Cpu cpu) {
+    private void osbget(final Memory memory, final Cpu cpu) {
         System.err.println("OSBGET");
     }
 
-    private void osbput(final Cpu cpu) {
+    private void osbput(final Memory memory, final Cpu cpu) {
         System.err.println("OSBPUT");
     }
 
-    private void osgbpb(final Cpu cpu) {
+    private void osgbpb(final Memory memory, final Cpu cpu) {
         System.err.println("OSGBPB");
     }
 
-    private void osfind(final Cpu cpu) {
+    private void osfind(final Memory memory, final Cpu cpu) {
         System.err.println("OSFIND");
     }
 
@@ -299,6 +398,23 @@ public class FilingSystemROM extends ReadOnlyMemory {
                 break;
             }
             case 4:
+                // *RUN
+                final String fileName = CpuUtil.readStringAbsolute(memory, (cpu.getX() & 0xFF) | ((cpu.getY() & 0xFF) << 8));
+                final LfsElement file = findFile(fileName);
+                if (fileName.toLowerCase().equals("d.repton2")) {
+                    int x = 1;
+                }
+                if (file == null) {
+                    fileNotFound(cpu, fileName);
+                    return;
+                } else {
+                    try {
+                        run(memory, cpu, file, file.getLoadAddress() & 0xFFFF, file.getExecAddress() & 0xFFFF);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        CpuUtil.newlineMessage(cpu, "error - " + ex.getMessage());
+                    }
+                }
                 break;
             case 5:
                 System.err.println("OSFSC: *CAT");

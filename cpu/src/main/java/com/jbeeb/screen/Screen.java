@@ -15,7 +15,7 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.*;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 import javax.swing.*;
@@ -188,6 +188,41 @@ public final class Screen implements ClockListener {
             add(Box.createRigidArea(new Dimension(4, 0)));
             add(screenLabel);
 
+//            final JButton dumpScreenButton = createButton("MODE7 dump");
+//            dumpScreenButton.addActionListener(e -> {
+//                final Memory memory = bbc.getRam();
+//                final byte[] screen = new byte[1024];
+//                int j = 0;
+//                for (int i = 0x7c00; i < 0x8000; i++) {
+//                    screen[j++] = (byte) memory.readByte(i);
+//                }
+//                try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(System.getProperty("user.home"), "screen.dat"))))) {
+//                    out.write(screen);
+//                } catch (Exception ex) {
+//                    ex.printStackTrace();
+//                }
+//            });
+//            add(dumpScreenButton);
+//
+//            final JButton loadScreenButton = createButton("MODE7 load");
+//            loadScreenButton.addActionListener(e -> {
+//                final Memory memory = bbc.getRam();
+//                final byte[] screen = new byte[1024];
+//                try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(System.getProperty("user.home"), "screen.dat"))))) {
+//                    in.readFully(screen);
+//                } catch (Exception ex) {
+//                    ex.printStackTrace();
+//                }
+//                for (int i = 0; i < screen.length; i++) {
+//                    memory.writeByte(0x7c00 + i, screen[i] & 0xFF);
+//                }
+//            });
+//            add(loadScreenButton);
+
+            final JButton clearKeysButton = createButton("keys");
+            clearKeysButton.addActionListener(e -> bbc.getSystemVIA().clearKeys());
+            add(clearKeysButton);
+
             add(Box.createGlue());
         }
 
@@ -321,7 +356,7 @@ public final class Screen implements ClockListener {
                     px = r.x + (rw - pw) / 2;
                     py = r.y;
                 }
-                ((Graphics2D) g).setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                //((Graphics2D) g).setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
                 final Rectangle ir = new Rectangle(px + IMAGE_BORDER_SIZE, py + IMAGE_BORDER_SIZE, pw - IMAGE_BORDER_SIZE * 2, ph - IMAGE_BORDER_SIZE * 2);
                 g.setColor(Color.BLACK);
                 g.fillRect(ir.x - IMAGE_BORDER_SIZE / 2, ir.y - IMAGE_BORDER_SIZE / 2, ir.width + IMAGE_BORDER_SIZE, ir.height + IMAGE_BORDER_SIZE);
