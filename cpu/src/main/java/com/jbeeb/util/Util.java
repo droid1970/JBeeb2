@@ -2,6 +2,7 @@ package com.jbeeb.util;
 
 import com.jbeeb.assembler.Assembler;
 import com.jbeeb.cpu.Cpu;
+import com.jbeeb.cpu.CpuUtil;
 import com.jbeeb.cpu.Flag;
 import com.jbeeb.cpu.InstructionSet;
 import com.jbeeb.disk.DiskDetails;
@@ -167,27 +168,6 @@ public final class Util {
         cpu.setFlag(Flag.CARRY, (result & 0x100) == 0);
         return al | (ah << 4);
     }
-//    // With reference to c64doc: http://vice-emu.sourceforge.net/plain/64doc.txt
-//    // and http://www.visual6502.org/JSSim/expert.html?graphics=false&a=0&d=a900f8e988eaeaea&steps=18
-//    function sbcBCD(subend) {
-//        var carry = cpu.p.c ? 0 : 1;
-//        var al = (cpu.a & 0xf) - (subend & 0xf) - carry;
-//        var ah = (cpu.a >>> 4) - (subend >>> 4);
-//        if (al & 0x10) {
-//            al = (al - 6) & 0xf;
-//            ah--;
-//        }
-//        if (ah & 0x10) {
-//            ah = (ah - 6) & 0xf;
-//        }
-//
-//        var result = cpu.a - subend - carry;
-//        cpu.p.n = !!(result & 0x80);
-//        cpu.p.z = !(result & 0xff);
-//        cpu.p.v = !!((cpu.a ^ result) & (subend ^ cpu.a) & 0x80);
-//        cpu.p.c = !(result & 0x100);
-//        cpu.a = al | (ah << 4);
-//    }
 
     public static int subtractWithCarry(final Cpu cpu, final int a, final int b, final boolean carryIn) {
         return addWithCarry(cpu, a, Util.onesComplement(b), carryIn);
@@ -225,30 +205,6 @@ public final class Util {
         cpu.run();
         return cpu;
     }
-
-//    public static DisplayMode inferDisplayMode(final VideoULA videoULA, final CRTC6845 crtc6845) {
-//        if (videoULA.isTeletext()) {
-//            return DisplayMode.MODE7;
-//        }
-//
-//        videoULA.isTeletext();
-//        final int horizontalChars = videoULA.getCharactersPerLine();
-//        final int verticalChars = crtc6845.getVerticalDisplayedChars();
-//
-//        if (horizontalChars == 20) {
-//            return videoULA.isFastClockRate() ? DisplayMode.MODE2 : DisplayMode.MODE5;
-//        } else if (horizontalChars == 40) {
-//            if (videoULA.isFastClockRate()) {
-//                return DisplayMode.MODE1;
-//            } else {
-//                return (verticalChars == 32) ? DisplayMode.MODE4 : DisplayMode.MODE6;
-//            }
-//        } else if (horizontalChars == 80) {
-//            return (verticalChars == 32) ? DisplayMode.MODE0 : DisplayMode.MODE3;
-//        } else {
-//            return null;
-//        }
-//    }
 
     public static String formatHexByte(final int n) {
         String s = Integer.toHexString(n);
@@ -465,5 +421,30 @@ public final class Util {
         final int[] ret = new int[size];
         System.arraycopy(array, 0, ret, 0, Math.min(array.length, size));
         return ret;
+    }
+
+    public static int[] toIntArray(final byte[] bytes, final int size) {
+        final int[] ret = new int[size];
+        for (int i = 0; i < size; i++) {
+            ret[i] = (i < bytes.length) ? ((int) bytes[i]) & 0xFF : 0;
+        }
+        return ret;
+    }
+
+    public static boolean isPrintableCharacter(final char c) {
+        return (c >= 32 && c <= 127);
+    }
+
+    public static byte[] stringToBytes(final String s) {
+        final byte[] bytes = new byte[s.length()];
+        for (int i = 0; i < s.length(); i++) {
+            final char c = s.charAt(i);
+            if (isPrintableCharacter(c)) {
+                bytes[i] = (byte) c;
+            } else {
+                bytes[i] = (byte) 32;
+            }
+        }
+        return bytes;
     }
 }

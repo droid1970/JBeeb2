@@ -8,7 +8,7 @@ import java.util.Arrays;
 
 public class MultiSoundChannel extends Thread {
 
-    private static final double MASTER_VOLUME = 0.25;
+    private static final double MASTER_VOLUME = 0.05;
 
     private static final int SAMPLE_RATE = 44_100;
     private static final int FRAME_SIZE = SAMPLE_RATE / 100;

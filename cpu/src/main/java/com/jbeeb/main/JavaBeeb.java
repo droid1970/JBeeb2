@@ -1,5 +1,6 @@
 package com.jbeeb.main;
 
+import com.jbeeb.localfs.DiskImage;
 import com.jbeeb.util.*;
 
 import javax.swing.text.MutableAttributeSet;

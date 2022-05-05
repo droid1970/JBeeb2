@@ -1,14 +1,23 @@
-package com.jbeeb.memory;
+package com.jbeeb.localfs;
 
 import com.jbeeb.cpu.Cpu;
 import com.jbeeb.cpu.CpuUtil;
+import com.jbeeb.main.JavaBeeb;
+import com.jbeeb.memory.AtomicFetchIntercept;
+import com.jbeeb.memory.Memory;
+import com.jbeeb.memory.ReadOnlyMemory;
+import com.jbeeb.util.Util;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
 
 public class FilingSystemROM extends ReadOnlyMemory {
+
+    private static final String CD_COMMAND_NAME = "CD";
+    private static final String UP_COMMAND_NAME = "UP";
+    private static final String DIR_COMMAND_NAME = "DIR";
+    private static final String LS_COMMAND_NAME = "LS";
 
     private static final Set<String> SELECTION_COMMANDS = new HashSet<>(Arrays.asList(
             "LOCALFS",
@@ -38,8 +47,14 @@ public class FilingSystemROM extends ReadOnlyMemory {
     private static final int OSFIND_ENTRY =     0x900C;
     private static final int OSFSC_ENTRY =      0x900E;
 
-    private Map<String, Runnable> serviceCommandHandlers = new HashMap<>();
-    private Map<String, Runnable> osfscCommandHandlers = new HashMap<>();
+    private final Map<String, CommandHandler> osfscCommandHandlers = new HashMap<>();
+
+    @FunctionalInterface
+    private interface CommandHandler {
+        void run(final String[] args);
+    }
+
+    private LfsElement currentDirectory = new LocalDirectory(JavaBeeb.FILES);
 
     public FilingSystemROM(final String name, final String copyright) {
         super(0x8000, createData(name, copyright));
@@ -63,30 +78,13 @@ public class FilingSystemROM extends ReadOnlyMemory {
         buf.put((byte) (9 + name.length())); // copyright offset
         buf.put((byte) 1);
 
-        buf.put(stringToBytes(name));
+        buf.put(Util.stringToBytes(name));
         buf.put((byte) 0);
 
-        buf.put(stringToBytes(copyright));
+        buf.put(Util.stringToBytes(copyright));
         buf.put((byte) 0);
 
-        return toIntArray(buf.array());
-    }
-
-    private void initialiseFilesystem(final Memory memory, final Cpu cpu) {
-        CpuUtil.osfsc(memory, cpu, 6);
-        initVectors(memory, cpu, cpu.getX());
-        CpuUtil.osbyte(cpu, 0x8F, 0xF, 0x0);
-    }
-
-    private void initVectors(final Memory memory, final Cpu cpu, final int romNumber) {
-        initVector(memory, cpu, OSFILE_VECTOR, OSFILE_ENTRY, romNumber);
-        initVector(memory, cpu, OSARGS_VECTOR, OSARGS_ENTRY, romNumber);
-        initVector(memory, cpu, OSBGET_VECTOR, OSBGET_ENTRY, romNumber);
-        initVector(memory, cpu, OSBPUT_VECTOR, OSBPUT_ENTRY, romNumber);
-        initVector(memory, cpu, OSGBPB_VECTOR, OSGBPB_ENTRY, romNumber);
-        initVector(memory, cpu, OSFIND_VECTOR, OSFIND_ENTRY, romNumber);
-        initVector(memory, cpu, OSFSC_VECTOR, OSFSC_ENTRY, romNumber);
-
+        return Util.toIntArray(buf.array(), 0x4000);
     }
 
     public void initialise(final Memory memory, final Cpu cpu) {
@@ -99,30 +97,90 @@ public class FilingSystemROM extends ReadOnlyMemory {
         installIntercept(cpu, OSFIND_ENTRY, () -> osfind(cpu));
         installIntercept(cpu, OSFSC_ENTRY, () -> osfsc(memory, cpu));
 
-        osfscCommandHandlers.put("LS", () -> listFiles(cpu));
-        osfscCommandHandlers.put("DIR", () -> listFiles(cpu));
-        osfscCommandHandlers.put("CD", () -> changeDirectory(memory, cpu));
-    }
-
-    private File dir = new File(System.getProperty("user.home"), "jbeeb/files");
-
-    private void listFiles(final Cpu cpu) {
-        final File[] files = dir.listFiles();
-        if (files != null) {
-            for (File f : files) {
-                CpuUtil.println(cpu, f.getName() + " - " + f.length());
-            }
-        }
-    }
-
-    private void changeDirectory(final Memory memory, final Cpu cpu) {
-        final int addr = (cpu.getX() & 0xFF) | ((cpu.getY() & 0xFF) << 8);
-        final String commandName = readString(memory, addr);
-        System.err.println("CD " + commandName);
+        osfscCommandHandlers.put(LS_COMMAND_NAME, (args) -> listFiles(cpu));
+        osfscCommandHandlers.put(DIR_COMMAND_NAME, (args) -> listFiles(cpu));
+        osfscCommandHandlers.put(CD_COMMAND_NAME, (args) -> changeDirectory(memory, cpu, args));
+        osfscCommandHandlers.put(UP_COMMAND_NAME, (args) -> changeDirectory(memory, cpu, new String[]{CD_COMMAND_NAME, ".."}));
     }
 
     private void installIntercept(final Cpu cpu, final int address, final Runnable runnable) {
         installIntercept(address, new AtomicFetchIntercept(cpu, runnable));
+    }
+
+    private void initialiseFilesystem(final Memory memory, final Cpu cpu) {
+        CpuUtil.osfsc(memory, cpu, 6);
+        writeVectors(memory, cpu, cpu.getX());
+        CpuUtil.osbyte(cpu, 0x8F, 0xF, 0x0);
+    }
+
+    private void writeVectors(final Memory memory, final Cpu cpu, final int romNumber) {
+        CpuUtil.writeExtendedVector(memory, cpu, OSFILE_VECTOR, OSFILE_ENTRY, romNumber);
+        CpuUtil.writeExtendedVector(memory, cpu, OSARGS_VECTOR, OSARGS_ENTRY, romNumber);
+        CpuUtil.writeExtendedVector(memory, cpu, OSBGET_VECTOR, OSBGET_ENTRY, romNumber);
+        CpuUtil.writeExtendedVector(memory, cpu, OSBPUT_VECTOR, OSBPUT_ENTRY, romNumber);
+        CpuUtil.writeExtendedVector(memory, cpu, OSGBPB_VECTOR, OSGBPB_ENTRY, romNumber);
+        CpuUtil.writeExtendedVector(memory, cpu, OSFIND_VECTOR, OSFIND_ENTRY, romNumber);
+        CpuUtil.writeExtendedVector(memory, cpu, OSFSC_VECTOR, OSFSC_ENTRY, romNumber);
+    }
+
+    private void listFiles(final Cpu cpu) {
+        final List<? extends LfsElement> listing = currentDirectory.list();
+        if (listing.isEmpty()) {
+            CpuUtil.newlineMessage(cpu, "Directory is empty");
+        } else {
+            for (LfsElement e : currentDirectory.list()) {
+                CpuUtil.println(cpu, e.getName());
+            }
+        }
+    }
+
+    private static String[] toArgs(final String command) {
+        return command.trim().split(" ");
+    }
+
+    private void changeDirectory(final Memory memory, final Cpu cpu, final String[] args) {
+        if (args.length == 0 || !Objects.equals(args[0], CD_COMMAND_NAME)) {
+            CpuUtil.newlineMessage(cpu, "Bad CD arguments");
+            return;
+        }
+        if (args.length == 1) {
+            // Print current directory name
+            CpuUtil.message(cpu, currentDirectory.getName());
+            return;
+        }
+
+        if (args.length != 2) {
+            CpuUtil.newlineMessage(cpu, "Too many arguments");
+            return;
+        }
+
+        final String dirName = args[1];
+        if (Objects.equals(dirName, "..")) {
+            changeToParent(cpu);
+            return;
+        }
+
+        final Optional<? extends LfsElement> optDir = currentDirectory.findAny(dirName);
+        if (optDir.isEmpty()) {
+            CpuUtil.newlineMessage(cpu, "Directory not found");
+            return;
+        }
+
+        final LfsElement dir = optDir.get();
+        if (!dir.isDirectory()) {
+            CpuUtil.newlineMessage(cpu, "Not a directory");
+            return;
+        }
+        this.currentDirectory = dir;
+    }
+
+    private void changeToParent(final Cpu cpu) {
+        final Optional<? extends LfsElement> parent = currentDirectory.getParent();
+        if (parent.isEmpty()) {
+            CpuUtil.newlineMessage(cpu, "Cannot change to parent directory");
+            return;
+        }
+        this.currentDirectory = parent.get();
     }
 
     private void serviceRoutine(final Memory memory, final Cpu cpu) {
@@ -143,14 +201,10 @@ public class FilingSystemROM extends ReadOnlyMemory {
 
             case 4: {
                 // Unrecognised command
-                final int addr = memory.readWord(0xF2) + cpu.getY();
-                final String command = readString(memory, addr).toUpperCase();
+                final String command = CpuUtil.readStringIndirect(memory, 0xF2, cpu.getY()).toUpperCase();
                 if (SELECTION_COMMANDS.contains(command)) {
                     // This filing system selected
                     CpuUtil.println(cpu, "Local filesystem selected");
-                    cpu.setA(0, true);
-                } else if (serviceCommandHandlers.containsKey(command)) {
-                    serviceCommandHandlers.get(command).run();
                     cpu.setA(0, true);
                 }
                 return;
@@ -164,8 +218,7 @@ public class FilingSystemROM extends ReadOnlyMemory {
 
             case 9: {
                 // *HELP expansion
-                final int addr = memory.readWord(0xF2) + cpu.getY();
-                final String command = readString(memory, addr);
+                final String command = CpuUtil.readStringIndirect(memory, 0xF2, cpu.getY());
                 if (!command.isEmpty()) {
                     final String[] toks = command.split(" ");
                     if (SELECTION_COMMANDS.contains(toks[0].toUpperCase())) {
@@ -235,12 +288,13 @@ public class FilingSystemROM extends ReadOnlyMemory {
             case 2:
             case 3: {
                 // Unrecognised command
-                final int addr = (cpu.getX() & 0xFF) | ((cpu.getY() & 0xFF) << 8);
-                final String commandLine = readString(memory, addr);
-                final String[] toks = commandLine.split(" ");
-                final String command = toks[0].toUpperCase();
+                final String commandLine = CpuUtil.readStringAbsolute(memory, (cpu.getX() & 0xFF) | ((cpu.getY() & 0xFF) << 8));
+                final String[] args = toArgs(commandLine);
+                final String command = args[0].toUpperCase();
                 if (osfscCommandHandlers.containsKey(command)) {
-
+                    osfscCommandHandlers.get(command).run(args);
+                } else {
+                    CpuUtil.badCommand(cpu);
                 }
                 break;
             }
@@ -255,47 +309,5 @@ public class FilingSystemROM extends ReadOnlyMemory {
             case 8:
         }
     }
-
-    private static String readString(final Memory memory, int address) {
-        final StringBuilder s = new StringBuilder();
-        int v;
-        while ((v = memory.readByte(address++)) != 0xD) {
-            s.append((char) v);
-        }
-        return s.toString();
-    }
-
-    private void initVector(final Memory memory, final Cpu cpu, final int vector, final int addr, final int romNumber) {
-        final int n = (vector - 0x200) / 2;
-        final int a = 0xFF00 + 3 * n;
-        memory.writeByte(vector, (a & 0xFF));
-        memory.writeByte(vector + 1, ((a >>> 8) & 0xFF));
-        CpuUtil.osbyte(cpu, 0xa8, 0x00, 0xFF);
-        final int v = (cpu.getX() & 0xFF) | ((cpu.getY() & 0xFF) << 8);
-        final int va = v + 3 * n;
-        memory.writeByte(va, addr & 0xFF);
-        memory.writeByte(va + 1, (addr >>> 8) & 0xFF);
-        memory.writeByte(va + 2, romNumber & 0xFF);
-    }
-
-    private static int[] toIntArray(final byte[] bytes) {
-        final int[] ret = new int[0x4000];
-        for (int i = 0; i < 0x4000; i++) {
-            ret[i] = (i < bytes.length) ? ((int) bytes[i]) & 0xFF : 0;
-        }
-        return ret;
-    }
-
-    private static byte[] stringToBytes(final String s) {
-        final byte[] bytes = new byte[s.length()];
-        for (int i = 0; i < s.length(); i++) {
-            final char c = s.charAt(i);
-            if (c >= 32 && c <= 127) {
-                bytes[i] = (byte) c;
-            } else {
-                bytes[i] = (byte) 32;
-            }
-        }
-        return bytes;
-    }
 }
+

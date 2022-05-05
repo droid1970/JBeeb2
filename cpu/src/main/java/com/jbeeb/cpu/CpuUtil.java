@@ -43,4 +43,50 @@ public final class CpuUtil {
             osnewl(cpu);
         }
     }
+
+    public static String readStringIndirect(final Memory memory, final int address, final int offset) {
+        int a = memory.readWord(address) + offset;
+        return readStringAbsolute(memory, a);
+    }
+
+    public static String readStringAbsolute(final Memory memory, int a) {
+        final StringBuilder s = new StringBuilder();
+        int v;
+        while ((v = memory.readByte(a++)) != 0xD) {
+            s.append((char) v);
+        }
+        return s.toString();
+    }
+
+    public static void writeExtendedVector(
+            final Memory memory,
+            final Cpu cpu,
+            final int vector,
+            final int addr,
+            final int romNumber
+    ) {
+        final int n = (vector - 0x200) / 2;
+        final int a = 0xFF00 + 3 * n;
+        memory.writeByte(vector, (a & 0xFF));
+        memory.writeByte(vector + 1, ((a >>> 8) & 0xFF));
+        osbyte(cpu, 0xa8, 0x00, 0xFF);
+        final int v = (cpu.getX() & 0xFF) | ((cpu.getY() & 0xFF) << 8);
+        final int va = v + 3 * n;
+        memory.writeByte(va, addr & 0xFF);
+        memory.writeByte(va + 1, (addr >>> 8) & 0xFF);
+        memory.writeByte(va + 2, romNumber & 0xFF);
+    }
+
+    public static void badCommand(final Cpu cpu) {
+        newlineMessage(cpu, "Bad command");
+    }
+
+    public static void newlineMessage(final Cpu cpu, final String message) {
+        osnewl(cpu);
+        message(cpu, message);
+    }
+
+    public static void message(final Cpu cpu, final String message) {
+        println(cpu, message);
+    }
 }

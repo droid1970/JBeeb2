@@ -3,6 +3,7 @@ package com.jbeeb.main;
 import com.jbeeb.cpu.Cpu;
 import com.jbeeb.device.*;
 import com.jbeeb.disk.FloppyDiskController;
+import com.jbeeb.localfs.FilingSystemROM;
 import com.jbeeb.memory.*;
 import com.jbeeb.screen.Screen;
 import com.jbeeb.util.*;
