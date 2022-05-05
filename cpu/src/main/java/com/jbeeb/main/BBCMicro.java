@@ -195,7 +195,7 @@ public final class BBCMicro implements InterruptSource {
         final int KEYV = 0xEF02;
         final int INSV = 0xE4B3;
 
-        if (true) memory.installIntercept(INSV, new AtomicFetchIntercept(cpu, () -> {
+        if (false) memory.installIntercept(INSV, new AtomicFetchIntercept(cpu, () -> {
             System.err.println("INSV: A = " + cpu.getA() + " X = " + cpu.getX());
 //            final boolean C = cpu.isFlagSet(Flag.CARRY);
 //            final boolean V = cpu.isFlagSet(Flag.OVERFLOW);

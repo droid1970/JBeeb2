@@ -6,21 +6,16 @@ public enum Instruction {
     ADC(InstructionType.READ) {
         @Override
         public void acceptValue(final Cpu cpu, final int value) {
-            final int a1 = cpu.getA();
-            final int a2 = value;
             final int result = cpu.isFlagSet(Flag.DECIMAL) ?
-                    Util.addWithCarryBCD(cpu, a1, a2, cpu.isFlagSet(Flag.CARRY)) :
-                    Util.addWithCarry(cpu, a1, a2, cpu.isFlagSet(Flag.CARRY));
+                    Util.addWithCarryBCD(cpu, cpu.getA(), value, cpu.isFlagSet(Flag.CARRY)) :
+                    Util.addWithCarry(cpu, cpu.getA(), value, cpu.isFlagSet(Flag.CARRY));
             cpu.setA(result, true);
         }
     },
     AND(InstructionType.READ) {
         @Override
         public void acceptValue(final Cpu cpu, final int value) {
-            final int a1 = cpu.getA();
-            final int a2 = value;
-            final int result = Util.and(cpu, a1, a2);
-            cpu.setA(result, true);
+            cpu.setA(cpu.getA() & value, true);
         }
     },
     ASL(InstructionType.READ_MODIFY_WRITE) {
@@ -150,10 +145,7 @@ public enum Instruction {
     EOR(InstructionType.READ) {
         @Override
         public void acceptValue(final Cpu cpu, final int value) {
-            final int a1 = cpu.getA();
-            final int a2 = value;
-            final int result = Util.eor(cpu, a1, a2);
-            cpu.setA(result, true);
+            cpu.setA(cpu.getA() ^ value, true);
         }
     },
     INC(InstructionType.READ_MODIFY_WRITE) {
@@ -209,10 +201,7 @@ public enum Instruction {
     ORA(InstructionType.READ) {
         @Override
         public void acceptValue(final Cpu cpu, final int value) {
-            final int a1 = cpu.getA();
-            final int a2 = value;
-            final int result = Util.or(cpu, a1, a2);
-            cpu.setA(result, true);
+            cpu.setA(cpu.getA() | value, true);
         }
     },
     PHA(InstructionType.STACK),
@@ -236,11 +225,9 @@ public enum Instruction {
     SBC(InstructionType.READ) {
         @Override
         public void acceptValue(final Cpu cpu, final int value) {
-            final int a1 = cpu.getA();
-            final int a2 = value;
             final int result = cpu.isFlagSet(Flag.DECIMAL) ?
-                    Util.subtractWithCarryBCD(cpu, a1, a2, cpu.isFlagSet(Flag.CARRY)) :
-                    Util.subtractWithCarry(cpu, a1, a2, cpu.isFlagSet(Flag.CARRY));
+                    Util.subtractWithCarryBCD(cpu, cpu.getA(), value, cpu.isFlagSet(Flag.CARRY)) :
+                    Util.subtractWithCarry(cpu, cpu.getA(), value, cpu.isFlagSet(Flag.CARRY));
             cpu.setA(result, true);
         }
     },

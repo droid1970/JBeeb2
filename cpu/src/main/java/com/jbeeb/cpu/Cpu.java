@@ -333,9 +333,6 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
                 });
                 queue(() -> {
                     setPCH(popByteNoIncrement());
-                    if (inNMI) {
-                        Util.log("CPU: RTI", 0);
-                    }
                     inIRQ = false;
                     inNMI = false;
                 });
@@ -349,28 +346,17 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
                     incSP();
                 });
                 queue(() -> setPCH(popByteNoIncrement()));
-                queue(() -> {
-//                    if (returnTo.containsKey(pc)) {
-//                        returnTo.get(pc).run();
-//                        returnTo.remove(pc);
-//                    }
-                    incPC();
-                    //System.err.println("RTS to " + Util.formatHexWord(pc));
-                });
+                queue(() -> incPC());
                 return;
             }
             case PHA: {
                 queue(this::readFromPC);
-                queue(() -> {
-                    pushByte(a);
-                });
+                queue(() -> pushByte(a));
                 return;
             }
             case PHP: {
                 queue(this::readFromPC);
-                queue(() -> {
-                    pushByte(Flag.BREAK.set(flags));
-                });
+                queue(() -> pushByte(Flag.BREAK.set(flags)));
                 return;
             }
             case PLA: {

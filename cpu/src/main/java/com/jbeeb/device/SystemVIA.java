@@ -96,7 +96,6 @@ public class SystemVIA extends VIA {
     }
 
     private void keyDown(final TargetKey target) {
-
         if (target != null) {
             final ColRow colrow = target.getColRow();
             final Boolean shift = target.getShift();
