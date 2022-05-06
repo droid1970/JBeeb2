@@ -1,5 +1,6 @@
 package com.jbeeb.cpu;
 
+import com.jbeeb.clock.ClockListener;
 import com.jbeeb.device.Device;
 import com.jbeeb.util.*;
 import com.jbeeb.assembler.Disassembler;
@@ -183,9 +184,6 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     }
 
     private void serviceNMI() {
-        if (inNMI) {
-            int x = 1;
-        }
         servicingInterrupt = true;
         callInterruptHandler(NMI_JUMP_VECTOR, true, false, true);
     }
@@ -221,7 +219,6 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     public void requestNMI(final boolean b) {
         nmiRequested = b;
     }
-
 
     @Override
     public void tick() {
@@ -355,7 +352,6 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
                         returnTo.remove(pc);
                     }
                     incPC();
-                    //System.err.println("RTS to " + Util.formatHexWord(pc));
                 });
                 return;
             }
@@ -634,41 +630,34 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     private void absolute() {
         switch (instruction.getType()) {
             case JUMP: {
-
                 queue(() -> lo = readFromAndIncrementPC());
                 queue(() -> {
                     hi = readFromAndIncrementPC();
                     setPCL(lo);
                     setPCH(hi);
                 });
-
                 break;
             }
             case READ: {
                 queue(() -> lo = readFromAndIncrementPC());
                 queue(() -> hi = readFromAndIncrementPC());
                 queue(() -> instruction.acceptValue(this, readMemory(lo, hi)));
-
                 break;
             }
 
             case READ_MODIFY_WRITE: {
-
                 queue(() -> lo = readFromAndIncrementPC());
                 queue(() -> hi = readFromAndIncrementPC());
                 queue(() -> operand = readMemory(lo, hi));
                 queue(() -> writeMemory(lo, hi, operand));
                 queue(() -> writeMemory(lo, hi, instruction.transformValue(this, operand)));
-
                 break;
             }
 
             case WRITE: {
-
                 queue(() -> lo = readFromAndIncrementPC());
                 queue(() -> hi = readFromAndIncrementPC());
                 queue(() -> writeMemory(lo, hi, instruction.readValue(this)));
-
                 break;
             }
 
@@ -733,12 +722,10 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
                        instruction.acceptValue(this, operand);
                    }
                 });
-
                 break;
             }
 
             case READ_MODIFY_WRITE: {
-
                 queue(() -> lo = readFromAndIncrementPC());
                 queue(() -> {
                     hi = readFromAndIncrementPC();
@@ -751,12 +738,10 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
                 queue(() -> operand = readMemory(elo, ehi));
                 queue(() -> writeMemory(elo, ehi, operand));
                 queue(() -> writeMemory(elo, ehi, instruction.transformValue(this, operand)));
-
                 break;
             }
 
             case WRITE: {
-
                 queue(() -> lo = readFromAndIncrementPC());
                 queue(() -> {
                     hi = readFromAndIncrementPC();
@@ -767,7 +752,6 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
                     ehi = (elo > 255) ? hi + 1 : hi;
                 });
                 queue(() -> writeMemory(elo, ehi, instruction.readValue(this)));
-
                 break;
             }
 
@@ -777,10 +761,10 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     }
 
     private void zeroPageIndexed(final boolean x) {
+
         switch (instruction.getType()) {
 
             case READ: {
-
                 queue(() -> lo = readFromAndIncrementPC());
                 queue(() -> {
                     readMemory(lo);
@@ -788,12 +772,10 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
                     elo = (lo + inc) & 0xFF;
                 });
                 queue(() -> instruction.acceptValue(this, readMemory(elo)));
-
                 break;
             }
 
             case READ_MODIFY_WRITE: {
-
                 queue(() -> lo = readFromAndIncrementPC());
                 queue(() -> {
                     readMemory(lo);
@@ -806,12 +788,10 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
                     operand = instruction.transformValue(this, operand);
                 });
                 queue(() -> writeMemory(elo, operand));
-
                 break;
             }
 
             case WRITE: {
-
                 queue(() -> lo = readFromAndIncrementPC());
                 queue(() -> {
                     readMemory(lo);
@@ -819,7 +799,6 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
                     elo = (lo + inc) & 0xFF;
                 });
                 queue(() -> writeMemory(elo, instruction.readValue(this)));
-
                 break;
             }
 
@@ -832,28 +811,22 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
         switch (instruction.getType()) {
 
             case READ: {
-
                 queue(() -> lo = readFromAndIncrementPC());
                 queue(() -> instruction.acceptValue(this, readMemory(lo)));
-
                 break;
             }
 
             case READ_MODIFY_WRITE: {
-
                 queue(() -> lo = readFromAndIncrementPC());
                 queue(() -> operand = readMemory(lo));
                 queue(() -> writeMemory(lo, operand));
                 queue(() -> writeMemory(lo, instruction.transformValue(this, operand)));
-
                 break;
             }
 
             case WRITE: {
-
                 queue(() -> lo = readFromAndIncrementPC());
                 queue(() -> writeMemory(lo, instruction.readValue(this)));
-
                 break;
             }
 

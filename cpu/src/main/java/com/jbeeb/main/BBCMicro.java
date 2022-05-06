@@ -1,6 +1,8 @@
 package com.jbeeb.main;
 
 import com.jbeeb.assembler.Disassembler;
+import com.jbeeb.clock.Clock;
+import com.jbeeb.clock.ClockSpeed;
 import com.jbeeb.cpu.Cpu;
 import com.jbeeb.cpu.Flag;
 import com.jbeeb.cpu.InstructionSet;
@@ -138,7 +140,7 @@ public final class BBCMicro implements InterruptSource {
         );
         screen.addKeyDownListener(systemVIA::keyDown);
         screen.addKeyUpListener(systemVIA::keyUp);
-        crtc6845.addVSyncListener(screen::vsync);
+        crtc6845.addVSyncListener(screen::verticalSync);
 
         this.cpu = new Cpu(systemStatus, scheduler, memory);
         filingSystemROM.initialise(cpu, memory);
@@ -150,7 +152,7 @@ public final class BBCMicro implements InterruptSource {
 
         this.clock = new Clock(
                 systemStatus,
-                2_000_000,
+                ClockSpeed.CR200,
                 Long.MAX_VALUE,
                 Arrays.asList(cpu, systemVIA, userVIA, crtc6845, screen)
         );

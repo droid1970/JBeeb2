@@ -1,7 +1,7 @@
 package com.jbeeb.device;
 
 import com.jbeeb.util.InterruptSource;
-import com.jbeeb.util.ClockListener;
+import com.jbeeb.clock.ClockListener;
 import com.jbeeb.util.StateKey;
 import com.jbeeb.util.SystemStatus;
 

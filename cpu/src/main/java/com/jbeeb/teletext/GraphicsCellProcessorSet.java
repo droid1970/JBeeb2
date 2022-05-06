@@ -133,8 +133,8 @@ final class GraphicsCellProcessorSet extends AbstractCellProcessorSet {
 
     private static void registerText(final int startCode, AlphaDefinition... specs) {
         int code = startCode;
-        for (int i = 0; i < specs.length; i++) {
-            registerGraphics(code++, specs[i]);
+        for (AlphaDefinition def : specs) {
+            registerGraphics(code++, def);
         }
     }
 

@@ -1,6 +1,7 @@
 package com.jbeeb.util;
 
-import java.nio.channels.SelectableChannel;
+import com.jbeeb.clock.ClockListener;
+
 import java.util.ArrayList;
 import java.util.List;
 

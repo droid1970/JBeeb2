@@ -1,5 +1,6 @@
 package com.jbeeb.device;
 
+import com.jbeeb.clock.ClockListener;
 import com.jbeeb.util.*;
 
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ public class Crtc6845 extends AbstractMemoryMappedDevice implements InterruptSou
 
     private final SystemVIA systemVIA;
     private final List<Runnable> vsyncListeners = new ArrayList<>();
+    private final List<Runnable> startOfVSyncListeners = new ArrayList<>();
 
     @StateKey(key = "v0")
     private int v0;
@@ -66,9 +68,16 @@ public class Crtc6845 extends AbstractMemoryMappedDevice implements InterruptSou
     public void addVSyncListener(final Runnable l) {
         vsyncListeners.add(Objects.requireNonNull(l));
     }
+    public void addStartOfVSyncListener(final Runnable l) {
+        startOfVSyncListeners.add(l);
+    }
 
     private void verticalSync() {
         vsyncListeners.forEach(Runnable::run);
+    }
+
+    private void startOfVerticalSync() {
+        startOfVSyncListeners.forEach(Runnable::run);
     }
 
     @Override

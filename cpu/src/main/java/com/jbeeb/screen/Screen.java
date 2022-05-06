@@ -1,12 +1,13 @@
 package com.jbeeb.screen;
 
+import com.jbeeb.clock.ClockSpeed;
 import com.jbeeb.device.Crtc6845;
 import com.jbeeb.device.SystemVIA;
 import com.jbeeb.device.VideoULA;
 import com.jbeeb.main.BBCMicro;
 import com.jbeeb.memory.Memory;
 import com.jbeeb.teletext.TeletextScreenRenderer;
-import com.jbeeb.util.ClockListener;
+import com.jbeeb.clock.ClockListener;
 import com.jbeeb.util.SystemStatus;
 import com.jbeeb.util.Util;
 
@@ -34,10 +35,19 @@ public final class Screen implements ClockListener {
     private static final int IMAGE_WIDTH = 640;
     private static final int IMAGE_HEIGHT = 512;
 
+    private static final double NORMAL_CLOCK_RATE = 2.0;
+    private static final double MIN_NORMAL_CLOCK_RATE = NORMAL_CLOCK_RATE * 0.975;
+    private static final double MAX_NORMAL_CLOCK_RATE = NORMAL_CLOCK_RATE * 1.05;
+
+    private static final Color LED_ON_COLOUR = Color.RED;
+    private static final Color LED_OFF_COLOUR = Color.GRAY;
+    private static final Color NORMAL_CLOCK_RATE_COLOUR = Color.GREEN.darker();
+    private static final Color FAST_CLOCK_RATE_COLOUR = Color.ORANGE;
+    private static final Color SLOW_CLOCK_RATE_COLOUR = Color.ORANGE;
+
     private final SystemStatus systemStatus;
     private final BBCMicro bbc;
     private final VideoULA videoULA;
-    private final Crtc6845 crtc6845;
     private final SystemVIA systemVIA;
     private final List<IntConsumer> keyUpListeners = new ArrayList<>();
     private final List<BiConsumer<Integer, Boolean>> keyDownListeners = new ArrayList<>();
@@ -65,12 +75,12 @@ public final class Screen implements ClockListener {
         this.systemStatus = Objects.requireNonNull(systemStatus);
         this.bbc = Objects.requireNonNull(bbc);
         this.videoULA = Objects.requireNonNull(videoULA);
-        this.crtc6845 = Objects.requireNonNull(crtc6845);
         this.systemVIA = Objects.requireNonNull(systemVIA);
         this.graphicsRenderer = new GraphicsModeScreenRenderer(this, memory, systemVIA, crtc6845, videoULA);
         this.teletextRenderer = new TeletextScreenRenderer(memory, systemVIA, crtc6845, videoULA);
-        SwingUtilities.invokeLater(this::createAndShowUI);
         this.imageComponent = new ImageComponent();
+
+        SwingUtilities.invokeLater(this::createAndShowUI);
     }
 
     private int imageIndex;
@@ -108,7 +118,7 @@ public final class Screen implements ClockListener {
         keyDownListeners.add(l);
     }
 
-    public void vsync() {
+    public void verticalSync() {
         if (videoULA.isTeletext()) {
             renderer = teletextRenderer;
         } else {
@@ -125,7 +135,7 @@ public final class Screen implements ClockListener {
     }
 
     private void createAndShowUI() {
-        final JFrame frame = new JFrame("JavaBeeb");
+        final var frame = new JFrame("JavaBeeb");
 
         frame.getContentPane().setBackground(new Color(32, 32, 32));
         frame.getContentPane().add(BorderLayout.CENTER, imageComponent);
@@ -160,20 +170,20 @@ public final class Screen implements ClockListener {
             setBorder(new EmptyBorder(4, 8, 8, 4));
             setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
 
-            final JButton saveStateButton = createButton("SAVE");
+            final var saveStateButton = createButton("SAVE");
             saveStateButton.addActionListener(e -> {
                 bbc.saveState();
             });
             add(saveStateButton);
 
-            final JButton restoreStateButton = createButton("RESTORE");
+            final var restoreStateButton = createButton("RESTORE");
             restoreStateButton.addActionListener(e -> {
                 bbc.restoreState();
             });
             add(Box.createRigidArea(new Dimension(4,0)));
             add(restoreStateButton);
 
-            final JCheckBox verboseCheckbox = createCheckbox("verbose");
+            final var verboseCheckbox = createCheckbox("verbose");
             verboseCheckbox.addActionListener(e -> {
                 verbose = !verbose;
                 bbc.getCpu().setVerboseSupplier(verbose ? () -> true : () -> false);
@@ -181,13 +191,19 @@ public final class Screen implements ClockListener {
             add(Box.createRigidArea(new Dimension(4,0)));
             add(verboseCheckbox);
 
-            final JCheckBox fullSpeedCheckBox = createCheckbox("full speed");
-            fullSpeedCheckBox.setSelected(bbc.getClock().isFullSpeed());
-            fullSpeedCheckBox.addActionListener(e -> {
-                bbc.getClock().setFullSpeed(!bbc.getClock().isFullSpeed());
+            //
+            // Clock speed
+            //
+            final JComboBox<ClockSpeed> speedCombo = new JComboBox<>(ClockSpeed.getStandardValues());
+            final Dimension speedComboPreferredSize = speedCombo.getPreferredSize();
+            speedCombo.setPreferredSize(new Dimension(speedComboPreferredSize.width - 128, speedComboPreferredSize.height));
+            speedCombo.setMinimumSize(speedCombo.getPreferredSize());
+            speedCombo.setSelectedItem(bbc.getClock().getClockSpeed());
+            speedCombo.addActionListener(e -> {
+                bbc.getClock().setClockSpeed(speedCombo.getItemAt(speedCombo.getSelectedIndex()));
             });
             add(Box.createRigidArea(new Dimension(4,0)));
-            add(fullSpeedCheckBox);
+            add(speedCombo);
 
             add(Box.createGlue());
 
@@ -219,43 +235,9 @@ public final class Screen implements ClockListener {
             add(capsLockLabel);
 
             screenLabel = createLabel();
-//            add(Box.createRigidArea(new Dimension(4, 0)));
-//            add(screenLabel);
 
-//            final JButton dumpScreenButton = createButton("MODE7 dump");
-//            dumpScreenButton.addActionListener(e -> {
-//                final Memory memory = bbc.getRam();
-//                final byte[] screen = new byte[1024];
-//                int j = 0;
-//                for (int i = 0x7c00; i < 0x8000; i++) {
-//                    screen[j++] = (byte) memory.readByte(i);
-//                }
-//                try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(System.getProperty("user.home"), "screen.dat"))))) {
-//                    out.write(screen);
-//                } catch (Exception ex) {
-//                    ex.printStackTrace();
-//                }
-//            });
-//            add(dumpScreenButton);
-//
-//            final JButton loadScreenButton = createButton("MODE7 load");
-//            loadScreenButton.addActionListener(e -> {
-//                final Memory memory = bbc.getRam();
-//                final byte[] screen = new byte[1024];
-//                try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(System.getProperty("user.home"), "screen.dat"))))) {
-//                    in.readFully(screen);
-//                } catch (Exception ex) {
-//                    ex.printStackTrace();
-//                }
-//                for (int i = 0; i < screen.length; i++) {
-//                    memory.writeByte(0x7c00 + i, screen[i] & 0xFF);
-//                }
-//            });
-//            add(loadScreenButton);
-
-//            final JButton clearKeysButton = createButton("keys");
-//            clearKeysButton.addActionListener(e -> bbc.getSystemVIA().clearKeys());
-//            add(clearKeysButton);
+            final Dimension currentPreferredSize = getPreferredSize();
+            setPreferredSize(new Dimension(currentPreferredSize.width, currentPreferredSize.height - 6));
         }
 
         JButton createButton(final String text) {
@@ -302,44 +284,6 @@ public final class Screen implements ClockListener {
         }
     }
 
-
-    private static class RoundIcon implements Icon {
-
-        private final int width;
-        private final int height;
-        private final int yoffset;
-
-        private Color colour;
-
-        RoundIcon(final int width, final int height, final int yoffset) {
-            this.width = width;
-            this.height = height;
-            this.yoffset = yoffset;
-        }
-
-        void setColour(final Color colour) {
-            this.colour = colour;
-        }
-
-        @Override
-        public void paintIcon(Component c, Graphics g1, int x, int y) {
-            final Graphics2D g = (Graphics2D) g1;
-            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g.setColor(colour);
-            g.fillOval((getIconWidth() - 8) / 2, (getIconHeight() - 8) / 2 + yoffset, 8, 8);
-        }
-
-        @Override
-        public int getIconWidth() {
-            return width;
-        }
-
-        @Override
-        public int getIconHeight() {
-            return height;
-        }
-    }
-
     private static final class LedIcon extends RoundIcon  {
 
         LedIcon(final int width, final int height, final int yoffset) {
@@ -347,7 +291,7 @@ public final class Screen implements ClockListener {
         }
 
         public void setOn(final boolean on) {
-            setColour(on ? Color.RED : Color.GRAY);
+            setColour(on ? LED_ON_COLOUR : LED_OFF_COLOUR);
         }
     };
 
@@ -358,13 +302,13 @@ public final class Screen implements ClockListener {
         }
 
         public void setRate(final double rate) {
-            if (rate > 1.95 && rate < 2.1) {
-                setColour(Color.GREEN.darker());
+            if (rate >= MIN_NORMAL_CLOCK_RATE && rate <= MAX_NORMAL_CLOCK_RATE) {
+                setColour(NORMAL_CLOCK_RATE_COLOUR);
             } else {
-                if (rate < 2) {
-                    setColour(Color.RED);
+                if (rate < NORMAL_CLOCK_RATE) {
+                    setColour(SLOW_CLOCK_RATE_COLOUR);
                 } else {
-                    setColour(Color.ORANGE);
+                    setColour(FAST_CLOCK_RATE_COLOUR);
                 }
             }
         }
@@ -384,6 +328,12 @@ public final class Screen implements ClockListener {
                 @Override
                 public void mouseMoved(MouseEvent e) {
                     enableCursor(2000);
+                }
+            });
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    requestFocus();
                 }
             });
         }
@@ -481,7 +431,6 @@ public final class Screen implements ClockListener {
             }
         }
     }
-
     private final class KeyHandler extends KeyAdapter {
 
         private final HashSet<Integer> pressedKeys = new HashSet<>();

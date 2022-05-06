@@ -1,4 +1,4 @@
-package com.jbeeb.util;
+package com.jbeeb.clock;
 
 public interface ClockListener {
     void tick();

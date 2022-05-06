@@ -121,6 +121,7 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
         if (scanLine >= scanLineCount) {
             return;
         }
+
         if (scanLine == 0 && charPos == 0) {
             cursorRect = null;
             paintStart = System.nanoTime();

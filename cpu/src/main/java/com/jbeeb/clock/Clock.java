@@ -1,4 +1,6 @@
-package com.jbeeb.util;
+package com.jbeeb.clock;
+
+import com.jbeeb.util.SystemStatus;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -17,17 +19,15 @@ public final class Clock {
     private long cycleCount;
     private long cycleCountSinceReset;
 
-    private long clockSpeed = 2_000_000;
+    private ClockSpeed clockSpeed = ClockSpeed.CR200;
     private long initialDelayNanos;
     private long delayNanos;
 
     private long nextTickTime;
 
-    private volatile boolean throttled = true;
-
     public Clock(
             final SystemStatus systemStatus,
-            final int clockSpeed,
+            final ClockSpeed clockSpeed,
             final long maxCycleCount,
             final List<ClockListener> listeners
     ) {
@@ -40,18 +40,14 @@ public final class Clock {
         }
     }
 
-    public synchronized void setClockSpeed(final int clockSpeed) {
-        this.clockSpeed = clockSpeed;
-        this.delayNanos = 1_000_000_000L / clockSpeed;
-        this.initialDelayNanos = delayNanos;
+    public ClockSpeed getClockSpeed() {
+        return clockSpeed;
     }
 
-    public boolean isFullSpeed() {
-        return !throttled;
-    }
-
-    public void setFullSpeed(final boolean fullSpeed) {
-        this.throttled = !fullSpeed;
+    public void setClockSpeed(final ClockSpeed clockSpeed) {
+        this.clockSpeed = Objects.requireNonNull(clockSpeed);
+        this.delayNanos = 1_000_000_000L / clockSpeed.getClockRate();
+        this.initialDelayNanos = this.delayNanos;
     }
 
     public long getCycleCount() {
@@ -95,7 +91,7 @@ public final class Clock {
     private void adjustDelay(final long durationNanos) {
         final double secs = (double) durationNanos / 1_000_000_000L;
         final double cps = cycleCountSinceReset / secs;
-        final double delta = cps / clockSpeed;
+        final double delta = cps / clockSpeed.getClockRate();
         delayNanos = Math.min(initialDelayNanos, Math.max(10L, (long) (delayNanos * delta)));
     }
 
@@ -108,7 +104,7 @@ public final class Clock {
     }
 
     private void nextCycle() {
-        while (throttled && nextTickTime > 0L && (System.nanoTime() < nextTickTime)) {
+        while (clockSpeed.isThrottled() && nextTickTime > 0L && (System.nanoTime() < nextTickTime)) {
             // Do nothing
         }
         nextTickTime += delayNanos;
