@@ -12,9 +12,9 @@ public final class ClockSpeed {
     public static final ClockSpeed CR400 = new ClockSpeed("4.00 Mhz", 4_000_000, true);
     public static final ClockSpeed MAX = new ClockSpeed("Maximum", 1_000_000_000, true);
 
-    final String displayName;
-    final int clockRate;
-    final boolean throttled;
+    private final String displayName;
+    private final int clockRate;
+    private final boolean throttled;
 
     private static final ClockSpeed[] STANDARD_VALUES = {
             CR025,
@@ -25,7 +25,7 @@ public final class ClockSpeed {
             MAX
     };
 
-    ClockSpeed(final String displayName, final int clockRate, final boolean throttled) {
+    public ClockSpeed(final String displayName, final int clockRate, final boolean throttled) {
         this.displayName = Objects.requireNonNull(displayName);
         this.clockRate = clockRate;
         this.throttled = throttled;
@@ -62,6 +62,6 @@ public final class ClockSpeed {
 
     @Override
     public String toString() {
-        return displayName;
+        return getDisplayName();
     }
 }

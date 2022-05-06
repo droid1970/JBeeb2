@@ -137,12 +137,7 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
         int py = computeCharY(scanLine, scanLinesPerChar, pixelHeight);
         for (int b = 0; b < pixelsPerChar; b++) {
             final int rgb = videoULA.getPhysicalColor(v, b).getRGB() & 0xFFFFFF;
-            try {
-                Util.fillRect(dataBuffer, rgb, px, py, pixelWidth, pixelHeight, imageWidth);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                int xxx = 1;
-            }
+            Util.fillRect(dataBuffer, rgb, px, py, pixelWidth, pixelHeight, imageWidth);
             px += pixelWidth;
         }
 

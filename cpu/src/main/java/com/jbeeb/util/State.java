@@ -6,13 +6,13 @@ import java.util.Map;
 
 public final class State {
 
-    private final Map<String, TypedMap> map = new HashMap<>();
+    private final Map<String, TypedProperties> map = new HashMap<>();
 
-    public void put(final String key, final TypedMap value) {
+    public void put(final String key, final TypedProperties value) {
         map.put(key, value);
     }
 
-    public TypedMap get(String key) {
+    public TypedProperties get(String key) {
         return map.get(key);
     }
 
@@ -30,7 +30,7 @@ public final class State {
 
     public void write(final DataOutput out) throws IOException {
         out.writeInt(map.size());
-        for (Map.Entry<String, TypedMap> e : map.entrySet()) {
+        for (Map.Entry<String, TypedProperties> e : map.entrySet()) {
             out.writeUTF(e.getKey());
             e.getValue().write(out);
         }
@@ -40,7 +40,7 @@ public final class State {
         final State ret = new State();
         final int size = in.readInt();
         for (int i = 0; i < size; i++) {
-            ret.put(in.readUTF(), TypedMap.read(in));
+            ret.put(in.readUTF(), TypedProperties.read(in));
         }
         return ret;
     }

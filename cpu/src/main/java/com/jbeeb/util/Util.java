@@ -10,7 +10,6 @@ import com.jbeeb.memory.Memory;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 import java.io.*;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -212,12 +211,20 @@ public final class Util {
         return "$" + s.toUpperCase();
     }
 
-    public static String pad(final String s, int width) {
+    public static String padRight(final String s, int width) {
         final StringBuilder sb = new StringBuilder();
         sb.append(s);
         while (sb.length() < width) {
             sb.append(" ");
         }
+        return sb.toString();
+    }
+
+    public static String padLeft(final String s, final int width, final char padChar) {
+        final StringBuilder sb = new StringBuilder();
+        final int padCount = width - s.length();
+        sb.append(String.valueOf(padChar).repeat(padCount));
+        sb.append(s);
         return sb.toString();
     }
 
@@ -227,16 +234,6 @@ public final class Util {
 
     public static String pad0(final String s, final int width) {
         return padLeft(s, width, '0');
-    }
-
-    public static String padLeft(final String s, final int width, final char padChar) {
-        final StringBuilder sb = new StringBuilder();
-        final int padCount = width - s.length();
-        for (int i = 0; i < padCount; i++) {
-            sb.append(padChar);
-        }
-        sb.append(s);
-        return sb.toString();
     }
 
     public static String formatDateTime(final LocalDateTime dateTime) {
@@ -266,14 +263,14 @@ public final class Util {
         getStateFields(fields, cl.getSuperclass());
     }
 
-    private static void populateTypeMap(final TypedMap typedMap, final Object obj, final List<Field> fields) throws Exception {
+    private static void populateTypeMap(final TypedProperties typedMap, final Object obj, final List<Field> fields) throws Exception {
         for (Field f : fields) {
-            final Annotation a = f.getAnnotation(StateKey.class);
+            final var a = f.getAnnotation(StateKey.class);
             if (a != null) {
-                final String key = ((StateKey) a).key();
+                final String key = a.key();
                 f.setAccessible(true);
-                final Class<?> type = f.getType();
-                final Object value = f.get(obj);
+                final var type = f.getType();
+                final var value = f.get(obj);
                 if (type == int.class) {
                     typedMap.putInt(key, (int) value);
                 } else if (type == long.class) {
@@ -292,12 +289,12 @@ public final class Util {
     }
 
     public static void populateState(final State state, Object obj) throws Exception {
-        final Class<?> cl = obj.getClass();
+        final var cl = obj.getClass();
         if (cl.getAnnotation(StateKey.class) != null) {
-            final String key = ((StateKey) cl.getAnnotation(StateKey.class)).key();
+            final var key = cl.getAnnotation(StateKey.class).key();
             final List<Field> fields = new ArrayList<>();
             getStateFields(fields, cl);
-            final TypedMap typedMap = new TypedMap();
+            final var typedMap = new TypedProperties();
             if (!fields.isEmpty()) {
                 populateTypeMap(typedMap, obj, fields);
             }
@@ -309,12 +306,12 @@ public final class Util {
     public static void applyState(final State state, final Object obj) throws Exception {
         final Class<?> cl = obj.getClass();
         if (cl.getAnnotation(StateKey.class) != null) {
-            final String key = ((StateKey) cl.getAnnotation(StateKey.class)).key();
-            final TypedMap typedMap = state.get(key);
+            final var key = cl.getAnnotation(StateKey.class).key();
+            final var typedMap = state.get(key);
             if (typedMap != null) {
                 final List<Field> fields = new ArrayList<>();
                 getStateFields(fields, cl);
-                for (Field f : fields) {
+                for (var f : fields) {
                     f.setAccessible(true);
                     final String fieldKey = f.getAnnotation(StateKey.class).key();
                     if (typedMap.containsKey(fieldKey)) {

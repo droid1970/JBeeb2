@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public final class TypedMap {
+public final class TypedProperties {
 
     private final Map<String, String> map = new HashMap<>();
     private final Map<String, int[]> arrayMap = new HashMap<>();
@@ -94,9 +94,9 @@ public final class TypedMap {
         }
     }
 
-    public static TypedMap read(final DataInput in) throws IOException {
+    public static TypedProperties read(final DataInput in) throws IOException {
         final int mapSize = in.readInt();
-        final TypedMap ret = new TypedMap();
+        final TypedProperties ret = new TypedProperties();
         for (int i = 0; i < mapSize; i++) {
             ret.map.put(in.readUTF(), in.readUTF());
         }

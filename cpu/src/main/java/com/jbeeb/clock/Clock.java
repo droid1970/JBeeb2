@@ -58,7 +58,7 @@ public final class Clock {
         long startTime = System.nanoTime();
         this.nextTickTime = startTime + delayNanos;
         while (!stopCondition.getAsBoolean()) {
-            nextCycle();
+            awaitNextCycle();
             tick();
             cycleCount++;
             cycleCountSinceReset++;
@@ -95,15 +95,13 @@ public final class Clock {
         delayNanos = Math.min(initialDelayNanos, Math.max(10L, (long) (delayNanos * delta)));
     }
 
-    private Runnable saveStateCallback;
-
     private void tick() {
         for (ClockListener l : listeners) {
             l.tick();
         }
     }
 
-    private void nextCycle() {
+    private void awaitNextCycle() {
         while (clockSpeed.isThrottled() && nextTickTime > 0L && (System.nanoTime() < nextTickTime)) {
             // Do nothing
         }

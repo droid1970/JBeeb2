@@ -35,8 +35,8 @@ public final class CpuUtil {
     }
 
     private static void print(final Cpu cpu, final String s, final boolean newline) {
-        for (int i = 0; i < s.length(); i++) {
-            final char c = s.charAt(i);
+        for (var i = 0; i < s.length(); i++) {
+            final var c = s.charAt(i);
             oswrch(cpu, (c >= 32 && c <= 127) ? (int) c : 32);
         }
         if (newline) {
@@ -51,7 +51,7 @@ public final class CpuUtil {
 
     public static String readStringAbsolute(final Memory memory, int a) {
         final StringBuilder s = new StringBuilder();
-        int v;
+        var v = 0;
         while ((v = memory.readByte(a++)) != 0xD) {
             s.append((char) v);
         }
@@ -65,13 +65,13 @@ public final class CpuUtil {
             final int addr,
             final int romNumber
     ) {
-        final int n = (vector - 0x200) / 2;
-        final int a = 0xFF00 + 3 * n;
+        final var n = (vector - 0x200) / 2;
+        final var a = 0xFF00 + 3 * n;
         memory.writeByte(vector, (a & 0xFF));
         memory.writeByte(vector + 1, ((a >>> 8) & 0xFF));
         osbyte(cpu, 0xa8, 0x00, 0xFF);
-        final int v = (cpu.getX() & 0xFF) | ((cpu.getY() & 0xFF) << 8);
-        final int va = v + 3 * n;
+        final var v = (cpu.getX() & 0xFF) | ((cpu.getY() & 0xFF) << 8);
+        final var va = v + 3 * n;
         memory.writeByte(va, addr & 0xFF);
         memory.writeByte(va + 1, (addr >>> 8) & 0xFF);
         memory.writeByte(va + 2, romNumber & 0xFF);

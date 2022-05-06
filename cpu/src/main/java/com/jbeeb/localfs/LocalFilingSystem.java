@@ -74,7 +74,7 @@ public class LocalFilingSystem extends FilingSystem {
         final List<? extends LfsElement> dirs = list.stream().filter(LfsElement::isDirectory).collect(Collectors.toList());
         final List<? extends LfsElement> files = list.stream().filter(LfsElement::isFile).collect(Collectors.toList());
         for (LfsElement e : dirs) {
-            CpuUtil.println(cpu, Util.pad(e.getName(), 16) + " - " + e.getType().getDescription());
+            CpuUtil.println(cpu, Util.padRight(e.getName(), 16) + " - " + e.getType().getDescription());
         }
         dirs.sort(Comparator.comparing(LfsElement::getName));
         files.sort(Comparator.comparing(LfsElement::getName));
@@ -84,7 +84,7 @@ public class LocalFilingSystem extends FilingSystem {
         }
 
         for (LfsElement e : files) {
-            CpuUtil.println(cpu, Util.pad(e.getName(), 16) + " - " + formatFileSize(e.length(), 1000));
+            CpuUtil.println(cpu, Util.padRight(e.getName(), 16) + " - " + formatFileSize(e.length(), 1000));
         }
     }
 

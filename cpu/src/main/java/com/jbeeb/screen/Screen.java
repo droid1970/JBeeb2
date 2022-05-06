@@ -137,7 +137,7 @@ public final class Screen implements ClockListener {
     private void createAndShowUI() {
         final var frame = new JFrame("JavaBeeb");
 
-        frame.getContentPane().setBackground(new Color(32, 32, 32));
+        frame.getContentPane().setBackground(Color.BLACK);
         frame.getContentPane().add(BorderLayout.CENTER, imageComponent);
 
         final StatusBar statusBar = new StatusBar();
@@ -195,9 +195,9 @@ public final class Screen implements ClockListener {
             // Clock speed
             //
             final JComboBox<ClockSpeed> speedCombo = new JComboBox<>(ClockSpeed.getStandardValues());
-            final Dimension speedComboPreferredSize = speedCombo.getPreferredSize();
-            speedCombo.setPreferredSize(new Dimension(speedComboPreferredSize.width - 128, speedComboPreferredSize.height));
-            speedCombo.setMinimumSize(speedCombo.getPreferredSize());
+            speedCombo.setPreferredSize(new Dimension(128, 18));
+            speedCombo.setMinimumSize(new Dimension(128, 18));
+            speedCombo.setMaximumSize(new Dimension(128, 18));
             speedCombo.setSelectedItem(bbc.getClock().getClockSpeed());
             speedCombo.addActionListener(e -> {
                 bbc.getClock().setClockSpeed(speedCombo.getItemAt(speedCombo.getSelectedIndex()));

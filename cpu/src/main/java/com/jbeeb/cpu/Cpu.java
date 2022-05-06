@@ -1012,7 +1012,7 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
 
     public String toString(final String lhs) {
         final StringBuilder s = new StringBuilder();
-        s.append(Util.pad(lhs, 16));
+        s.append(Util.padRight(lhs, 16));
         s.append(" PC = ").append(Util.formatHexWord(pc));
         s.append(" A = ").append(Util.formatHexByte(getA()));
         s.append("  X = ").append(Util.formatHexByte(getX()));
