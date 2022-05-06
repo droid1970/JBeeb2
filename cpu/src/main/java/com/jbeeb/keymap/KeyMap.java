@@ -65,6 +65,7 @@ public final class KeyMap {
             .mapChars(BBCKey.SEMICOLON_PLUS, true, "+")
             .mapChars(BBCKey.SPACE, null, " ")
 
+            .map(BBCKey.COPY, 17)
             .map(BBCKey.A, KeyEvent.VK_A)
             .map(BBCKey.B, KeyEvent.VK_B)
             .map(BBCKey.C, KeyEvent.VK_C)

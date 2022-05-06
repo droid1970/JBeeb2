@@ -22,7 +22,9 @@ public class LocalFilingSystem extends FilingSystem {
 
     private static final Set<String> SELECTION_COMMANDS = new HashSet<>(Arrays.asList(
             "LOCALFS",
-            "LFS"
+            "LFS",
+            "DISC",
+            "DISK"
     ));
 
     private static final List<String> HELP_TEXT = Arrays.asList(
@@ -286,7 +288,7 @@ public class LocalFilingSystem extends FilingSystem {
                 System.err.println("OSFSC: EOF check " + cpu.getX());
                 break;
             }
-            case 2:
+
             case 3: {
                 // Unrecognised command
 
@@ -296,6 +298,7 @@ public class LocalFilingSystem extends FilingSystem {
                 runCommandHandler(command, args, () -> CpuUtil.badCommand(cpu));
                 break;
             }
+            case 2:
             case 4:
                 // *RUN
                 final String fileName = CpuUtil.readStringAbsolute(memory, (cpu.getX() & 0xFF) | ((cpu.getY() & 0xFF) << 8));

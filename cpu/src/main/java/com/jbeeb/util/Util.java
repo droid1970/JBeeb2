@@ -83,10 +83,10 @@ public final class Util {
     }
 
     public static int rol(final Cpu cpu, final int a, final boolean carryIn) {
-        final boolean carrtOut = (a & 0x80) != 0;
+        final boolean carryOut = (a & 0x80) != 0;
         final int carry = (carryIn) ? 1 : 0;
         final int result = ((a << 1) & 0xFF) | carry;
-        cpu.setFlag(Flag.CARRY, carrtOut);
+        cpu.setFlag(Flag.CARRY, carryOut);
         cpu.maintainNZ(result);
         return result;
     }
