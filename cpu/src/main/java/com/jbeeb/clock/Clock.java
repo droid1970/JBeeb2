@@ -10,7 +10,7 @@ import java.util.function.BooleanSupplier;
 
 public final class Clock {
 
-    private static final long RESET_CYCLES = 2_000_000L;
+    private static final int MAX_REPORTED_CLOCK_RATE = 8_000_000;
     private static final long ADJUST_MASK = 0xFF;
 
     private final SystemStatus systemStatus;
@@ -68,7 +68,9 @@ public final class Clock {
             if ((cycleCountSinceReset & ADJUST_MASK) == 0) {
                 adjustDelay(System.nanoTime() - startTime);
             }
-            if (cycleCountSinceReset >= RESET_CYCLES) {
+
+            // Reset every second or so
+            if (cycleCountSinceReset >= Math.min(clockSpeed.getClockRate(), MAX_REPORTED_CLOCK_RATE)) {
                 delayNanos = initialDelayNanos;
                 final long now = System.nanoTime();
                 updateSystemStatus(now - startTime);
@@ -97,7 +99,7 @@ public final class Clock {
 
     private void tick() {
         for (ClockListener l : listeners) {
-            l.tick();
+            l.tick(Math.min(clockSpeed.getClockRate(), MAX_REPORTED_CLOCK_RATE));
         }
     }
 

@@ -1,5 +1,5 @@
 package com.jbeeb.clock;
 
 public interface ClockListener {
-    void tick();
+    void tick(int clockRate);
 }

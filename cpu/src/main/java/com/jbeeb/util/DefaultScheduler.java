@@ -26,7 +26,7 @@ public class DefaultScheduler implements Scheduler, ClockListener {
     }
 
     @Override
-    public void tick() {
+    public void tick(final int clockRate) {
         if (!entries.isEmpty()) {
             entriesToRun.clear();
             boolean run = false;

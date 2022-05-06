@@ -5,11 +5,10 @@ import java.util.Objects;
 
 public final class ClockSpeed {
 
-    public static final ClockSpeed CR025 = new ClockSpeed("0.25 Mhz", 250_000, true);
-    public static final ClockSpeed CR050 = new ClockSpeed("0.50 Mhz", 500_000, true);
-    public static final ClockSpeed CR100 = new ClockSpeed("1.00 Mhz", 1_000_000, true);
-    public static final ClockSpeed CR200 = new ClockSpeed("2.00 Mhz", 2_000_000, true);
-    public static final ClockSpeed CR400 = new ClockSpeed("4.00 Mhz", 4_000_000, true);
+    public static final ClockSpeed CR200 = new ClockSpeed("2.0 Mhz", 2_000_000, true);
+    public static final ClockSpeed CR400 = new ClockSpeed("4.0 Mhz", 4_000_000, true);
+    public static final ClockSpeed CR600 = new ClockSpeed("6.0 Mhz", 6_000_000, true);
+    public static final ClockSpeed CR800 = new ClockSpeed("8.0 Mhz", 8_000_000, true);
     public static final ClockSpeed MAX = new ClockSpeed("Maximum", 1_000_000_000, true);
 
     private final String displayName;
@@ -17,11 +16,10 @@ public final class ClockSpeed {
     private final boolean throttled;
 
     private static final ClockSpeed[] STANDARD_VALUES = {
-            CR025,
-            CR050,
-            CR100,
             CR200,
             CR400,
+            CR600,
+            CR800,
             MAX
     };
 

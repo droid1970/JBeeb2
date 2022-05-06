@@ -11,10 +11,9 @@ import java.util.Objects;
 public class Crtc6845 extends AbstractMemoryMappedDevice implements InterruptSource, ClockListener {
 
     private static final int VERTICAL_SYNC_FREQUENCY_HZ = 50;
-    private static final long VERTICAL_SYNC_CYCLE_COUNT = 2_000_000L / VERTICAL_SYNC_FREQUENCY_HZ;
 
-    private static final long FAST_CURSOR_CYCLE_COUNT = VERTICAL_SYNC_CYCLE_COUNT * 8;
-    private static final long SLOW_CURSOR_CYCLE_COUNT = VERTICAL_SYNC_CYCLE_COUNT * 16;
+    private static final int FAST_CURSOR_VSYNCS = 8;
+    private static final int SLOW_CURSOR_VSYNCS = 16;
 
     private final SystemVIA systemVIA;
     private final List<Runnable> vsyncListeners = new ArrayList<>();
@@ -48,12 +47,13 @@ public class Crtc6845 extends AbstractMemoryMappedDevice implements InterruptSou
     }
 
     @Override
-    public void tick() {
-        final long cursorToggleCycles = (isCursorFastBlink()) ? FAST_CURSOR_CYCLE_COUNT : SLOW_CURSOR_CYCLE_COUNT;
+    public void tick(final int clockRate) {
+        final long verticalSyncCycleCount = clockRate / VERTICAL_SYNC_FREQUENCY_HZ;
+        final long cursorToggleCycles = verticalSyncCycleCount * ((isCursorFastBlink()) ? FAST_CURSOR_VSYNCS : SLOW_CURSOR_VSYNCS);
         if ((cycleCount % cursorToggleCycles) == 0) {
             cursorOn = !cursorOn;
         }
-        final long syncCycle = (cycleCount % VERTICAL_SYNC_CYCLE_COUNT);
+        final long syncCycle = (cycleCount % verticalSyncCycleCount);
         if (syncCycle == 0) {
             systemVIA.setCA1(true);
             verticalSync();

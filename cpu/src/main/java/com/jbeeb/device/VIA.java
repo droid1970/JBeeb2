@@ -7,6 +7,8 @@ import com.jbeeb.util.SystemStatus;
 
 public class VIA extends AbstractMemoryMappedDevice implements ClockListener, InterruptSource {
 
+    private static final int CLOCK_RATE = 2_000_000;
+
     private static final int ORB = 0x0;
     private static final int ORA = 0x1;
     private static final int DDRB = 0x2;
@@ -108,7 +110,7 @@ public class VIA extends AbstractMemoryMappedDevice implements ClockListener, In
     @StateKey(key = "t1_pb7")
     protected int t1_pb7;
 
-    //private final VIA self;
+    private long cycleCount;
 
     public VIA(
             final SystemStatus systemStatus,
@@ -140,8 +142,18 @@ public class VIA extends AbstractMemoryMappedDevice implements ClockListener, In
     }
 
     @Override
-    public void tick() {
-        final int cycles = 1;
+    public void tick(int clockRate) {
+        int cycles = 1;
+        if (clockRate > CLOCK_RATE) {
+            // Maybe skip this
+            final int stretch = clockRate / CLOCK_RATE;
+            if ((cycleCount % stretch) != 0) {
+                cycleCount++;
+                return;
+            }
+        } else if (clockRate < CLOCK_RATE) {
+            cycles = CLOCK_RATE / clockRate;
+        }
         justhit = 0;
         int newT1c = t1c - cycles;
         if (newT1c < -2 && t1c > -3) {
@@ -177,6 +189,8 @@ public class VIA extends AbstractMemoryMappedDevice implements ClockListener, In
             }
             t2c = newT2c;
         }
+
+        cycleCount++;
     }
 
     @Override

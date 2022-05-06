@@ -68,12 +68,6 @@ public class SystemVIA extends VIA {
         }
     }
 
-    @Override
-    public void tick() {
-        super.tick();
-        //soundChip.tick();
-    }
-
     public final void characterDown(final char c) {
         keyDown(keyMap.get(c));
     }

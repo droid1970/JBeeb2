@@ -220,8 +220,8 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
     }
 
     @Override
-    public void tick() {
-        scheduler.tick();
+    public void tick(final int clockRate) {
+        scheduler.tick(clockRate);
         pcDis = pc;
         if (queue.isEmpty()) {
             if (!servicingInterrupt) {
@@ -264,7 +264,7 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
     @Override
     public void run() {
         while (!halted) {
-            tick();
+            tick(2000000);
         }
     }
 
@@ -293,7 +293,7 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
         pushByte(pcDec & 0xFF);
         setPC(address);
         while (pc != pcNow) {
-            tick();
+            tick(2000000);
         }
     }
 

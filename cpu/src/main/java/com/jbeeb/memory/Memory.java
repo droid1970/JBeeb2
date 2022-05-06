@@ -8,8 +8,6 @@ import java.util.List;
 
 public interface Memory {
 
-    int KB = 1024;
-
     boolean hasAddress(int address);
 
     int getMinAddress();
@@ -35,16 +33,13 @@ public interface Memory {
         writeByte(address + 1, (word >>> 8) & 0xFF);
     }
 
-    static Memory readOnlyKb(final int start, final int[] data) {
-        return new ReadOnlyMemory(start, data);
-    }
     static Memory randomAccessMemory(final int start, final int size) {
         return new RandomAccessMemory(start, size);
     }
 
     static Memory bbcMicroB(final List<MemoryMappedDevice> devices, final Memory ram, final Memory pagedRom, final Memory osRom) {
         final List<Memory> regions = new ArrayList<>();
-        regions.addAll(devices);
+        regions.addAll(devices); // Important that devices are added first
         regions.add(ram);
         regions.add(pagedRom);
         regions.add(osRom);

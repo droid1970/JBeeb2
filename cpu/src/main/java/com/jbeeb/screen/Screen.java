@@ -94,7 +94,7 @@ public final class Screen implements ClockListener {
     }
 
     @Override
-    public void tick() {
+    public void tick(final int clockRate) {
         if (renderer != null && renderer.isClockBased()) {
             renderer.tick(getImageToPaint());
         }

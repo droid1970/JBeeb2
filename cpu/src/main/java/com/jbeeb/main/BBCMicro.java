@@ -242,6 +242,7 @@ public final class BBCMicro implements InterruptSource {
         Util.populateState(state, crtc6845);
         Util.populateState(state, cpu);
         Util.populateState(state, ram);
+        // TODO: Soundchip?
         return state;
     }
 
@@ -252,6 +253,7 @@ public final class BBCMicro implements InterruptSource {
         Util.applyState(state, crtc6845);
         Util.applyState(state, cpu);
         Util.applyState(state, ram);
+        // TODO: Soundchip?
     }
 
     public void run(final BooleanSupplier haltCondition) {
@@ -265,7 +267,7 @@ public final class BBCMicro implements InterruptSource {
 
     @Override
     public String getName() {
-        return "machine";
+        return "BBC Micro Model B";
     }
 
     public Clock getClock() {
