@@ -41,7 +41,7 @@ public final class BBCMicro implements InterruptSource {
 
     private final Cpu cpu;
 
-    private final Runner runner;
+    private final Clock clock;
 
     public SystemStatus getSystemStatus() {
         return systemStatus;
@@ -148,7 +148,7 @@ public final class BBCMicro implements InterruptSource {
             this.fdc.setCpu(cpu);
         }
 
-        this.runner = new Runner(
+        this.clock = new Clock(
                 systemStatus,
                 2_000_000,
                 Long.MAX_VALUE,
@@ -253,7 +253,7 @@ public final class BBCMicro implements InterruptSource {
     }
 
     public void run(final BooleanSupplier haltCondition) {
-        this.runner.run(haltCondition);
+        this.clock.run(haltCondition);
     }
 
     public void addInterruptSource(final InterruptSource source) {
@@ -264,6 +264,10 @@ public final class BBCMicro implements InterruptSource {
     @Override
     public String getName() {
         return "machine";
+    }
+
+    public Clock getClock() {
+        return clock;
     }
 
     @Override

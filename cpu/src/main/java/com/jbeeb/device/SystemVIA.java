@@ -33,6 +33,9 @@ public class SystemVIA extends VIA {
     @StateKey(key = "shiftLockLight")
     private boolean shiftlockLight;
 
+    private Runnable capsLockChangedCallback;
+    private Runnable shiftLockChangedCallback;
+
     private static IntConsumer createSoundChip() {
         try {
             return new MultiSoundChip();
@@ -171,39 +174,6 @@ public class SystemVIA extends VIA {
         }
     }
 
-    private void updateKeys_OLD(final boolean forceInterrupt) {
-        final int numcols = 10;
-        if ((IC32 & 8) != 0) {
-            for (int i = 0; i < numcols; i++) {
-                for (int j = 1; j < 8; j++) {
-                    if (keyDown[i][j]) {
-                        setCA2(true);
-                        return;
-                    }
-                }
-            }
-        } else {
-            int portapins = portAPins;
-            int keyrow = (portapins >>> 4) & 7;
-            int keycol = portapins & 0xf;
-            if (!keyDown[keycol][keyrow]) {
-                portAPins &= 0x7f;
-            } else if ((ddra & 0x80) == 0) {
-                portAPins |= 0x80;
-            }
-
-            if (keycol < numcols) {
-                for (int j = 1; j < 8; j++) {
-                    if (keyDown[keycol][j]) {
-                        setCA2(true);
-                        return;
-                    }
-                }
-            }
-        }
-        setCA2(false);
-    }
-
     @Override
     public void portAUpdated() {
         updateKeys();
@@ -230,12 +200,46 @@ public class SystemVIA extends VIA {
 
         this.screenAddress = ((IC32 & 16) != 0 ? 2 : 0) | ((IC32 & 32) != 0 ? 1 : 0);
 
-        capslockLight = (IC32 & 0x40) == 0;
-        shiftlockLight = (IC32 & 0x80) == 0;
+        setCapsLockLight((IC32 & 0x40) == 0);
+        setShiftLockLight(shiftlockLight = (IC32 & 0x80) == 0);
 
         // Screen address
 
         recalculatePortAPins();
+    }
+
+    public void setCapsLockChangedCallback(final Runnable capsLockChangedCallback) {
+        this.capsLockChangedCallback = capsLockChangedCallback;
+    }
+
+    public void setShiftLockChangedCallback(final Runnable shiftLockChangedCallback) {
+        this.shiftLockChangedCallback = shiftLockChangedCallback;
+    }
+
+    public boolean isCapslockLightOn() {
+        return capslockLight;
+    }
+
+    private void setCapsLockLight(final boolean on) {
+        if (this.capslockLight != on) {
+            this.capslockLight = on;
+            if (capsLockChangedCallback != null) {
+                capsLockChangedCallback.run();
+            }
+        }
+    }
+
+    public boolean isShiftLockLightOn() {
+        return shiftlockLight;
+    }
+
+    private void setShiftLockLight(final boolean on) {
+        if (this.shiftlockLight != on) {
+            this.shiftlockLight = on;
+            if (shiftLockChangedCallback != null) {
+                shiftLockChangedCallback.run();
+            }
+        }
     }
 
     @Override

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
-public final class Runner {
+public final class Clock {
 
     private static final long RESET_CYCLES = 2_000_000L;
     private static final long ADJUST_MASK = 0xFF;
@@ -25,7 +25,7 @@ public final class Runner {
 
     private volatile boolean throttled = true;
 
-    public Runner(
+    public Clock(
             final SystemStatus systemStatus,
             final int clockSpeed,
             final long maxCycleCount,
@@ -44,6 +44,10 @@ public final class Runner {
         this.clockSpeed = clockSpeed;
         this.delayNanos = 1_000_000_000L / clockSpeed;
         this.initialDelayNanos = delayNanos;
+    }
+
+    public boolean isFullSpeed() {
+        return !throttled;
     }
 
     public void setFullSpeed(final boolean fullSpeed) {

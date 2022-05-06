@@ -15,7 +15,6 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.*;
-import java.awt.image.DataBuffer;
 import java.io.*;
 import java.util.*;
 
@@ -147,8 +146,12 @@ public final class Screen implements ClockListener {
 
     private final class StatusBar extends JComponent {
 
-        final JLabel mhzLabel;
+        final ClockIcon clockIcon;
+        final JLabel clockLabel;
+
         final JLabel screenLabel;
+        final JLabel capsLockLabel;
+        final LedIcon capsLockIcon;
         boolean verbose = false;
 
         StatusBar() {
@@ -163,31 +166,57 @@ public final class Screen implements ClockListener {
             });
             add(saveStateButton);
 
-            add(Box.createRigidArea(new Dimension(4, 0)));
-
             final JButton restoreStateButton = createButton("RESTORE");
             restoreStateButton.addActionListener(e -> {
                 bbc.restoreState();
             });
+            add(Box.createRigidArea(new Dimension(4,0)));
             add(restoreStateButton);
-
-            add(Box.createRigidArea(new Dimension(4, 0)));
 
             final JCheckBox verboseCheckbox = createCheckbox("verbose");
             verboseCheckbox.addActionListener(e -> {
                 verbose = !verbose;
                 bbc.getCpu().setVerboseSupplier(verbose ? () -> true : () -> false);
             });
+            add(Box.createRigidArea(new Dimension(4,0)));
             add(verboseCheckbox);
 
-            add(Box.createRigidArea(new Dimension(4, 0)));
+            final JCheckBox fullSpeedCheckBox = createCheckbox("full speed");
+            fullSpeedCheckBox.setSelected(bbc.getClock().isFullSpeed());
+            fullSpeedCheckBox.addActionListener(e -> {
+                bbc.getClock().setFullSpeed(!bbc.getClock().isFullSpeed());
+            });
+            add(Box.createRigidArea(new Dimension(4,0)));
+            add(fullSpeedCheckBox);
 
-            mhzLabel = createLabel();
-            add(mhzLabel);
+            add(Box.createGlue());
+
+            //
+            // Labels
+            //
+
+
+            add(Box.createRigidArea(new Dimension(8,0)));
+            clockIcon = new ClockIcon(12, 16, 1);
+            clockIcon.setColour(Color.BLACK);
+            clockLabel = createLabel();
+            clockLabel.setIcon(clockIcon);
+            add(clockLabel);
+
+            capsLockLabel = createLabel();
+            capsLockLabel.setText("caps");
+            capsLockIcon = new LedIcon(12, 16, 1);
+            capsLockLabel.setIcon(capsLockIcon);
+            bbc.getSystemVIA().setCapsLockChangedCallback(() -> {
+                capsLockIcon.setOn(bbc.getSystemVIA().isCapslockLightOn());
+                capsLockLabel.repaint();
+            });
+            add(Box.createRigidArea(new Dimension(8,0)));
+            add(capsLockLabel);
 
             screenLabel = createLabel();
-            add(Box.createRigidArea(new Dimension(4, 0)));
-            add(screenLabel);
+//            add(Box.createRigidArea(new Dimension(4, 0)));
+//            add(screenLabel);
 
 //            final JButton dumpScreenButton = createButton("MODE7 dump");
 //            dumpScreenButton.addActionListener(e -> {
@@ -220,11 +249,9 @@ public final class Screen implements ClockListener {
 //            });
 //            add(loadScreenButton);
 
-            final JButton clearKeysButton = createButton("keys");
-            clearKeysButton.addActionListener(e -> bbc.getSystemVIA().clearKeys());
-            add(clearKeysButton);
-
-            add(Box.createGlue());
+//            final JButton clearKeysButton = createButton("keys");
+//            clearKeysButton.addActionListener(e -> bbc.getSystemVIA().clearKeys());
+//            add(clearKeysButton);
         }
 
         JButton createButton(final String text) {
@@ -252,7 +279,12 @@ public final class Screen implements ClockListener {
 
         void refresh() {
             final String mhzString = systemStatus.getString(SystemStatus.KEY_MILLION_CYCLES_PER_SECOND, "?");
-            mhzLabel.setText("clockrate (mhz) = " + mhzString);
+            try {
+                clockIcon.setRate(Double.parseDouble(mhzString));
+            } catch (Exception ex) {
+                // Ignored
+            }
+            clockLabel.setText("clock = " + mhzString);
             final String displayRefreshString = systemStatus.getString(SystemStatus.KEY_AVG_DISPLAY_REFRESH_TIME_MILLIS, "?");
             screenLabel.setText("display (ms) = " + displayRefreshString);
         }
@@ -267,6 +299,72 @@ public final class Screen implements ClockListener {
     }
 
 
+    private static class RoundIcon implements Icon {
+
+        private final int width;
+        private final int height;
+        private final int yoffset;
+
+        private Color colour;
+
+        RoundIcon(final int width, final int height, final int yoffset) {
+            this.width = width;
+            this.height = height;
+            this.yoffset = yoffset;
+        }
+
+        void setColour(final Color colour) {
+            this.colour = colour;
+        }
+
+        @Override
+        public void paintIcon(Component c, Graphics g1, int x, int y) {
+            final Graphics2D g = (Graphics2D) g1;
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g.setColor(colour);
+            g.fillOval((getIconWidth() - 8) / 2, (getIconHeight() - 8) / 2 + yoffset, 8, 8);
+        }
+
+        @Override
+        public int getIconWidth() {
+            return width;
+        }
+
+        @Override
+        public int getIconHeight() {
+            return height;
+        }
+    }
+
+    private static final class LedIcon extends RoundIcon  {
+
+        LedIcon(final int width, final int height, final int yoffset) {
+            super(width, height, yoffset);
+        }
+
+        public void setOn(final boolean on) {
+            setColour(on ? Color.RED : Color.GRAY);
+        }
+    };
+
+    private static final class ClockIcon extends RoundIcon  {
+
+        ClockIcon(final int width, final int height, final int yoffset) {
+            super(width, height, yoffset);
+        }
+
+        public void setRate(final double rate) {
+            if (rate > 1.95 && rate < 2.1) {
+                setColour(Color.GREEN);
+            } else {
+                if (rate < 2) {
+                    setColour(Color.RED);
+                } else {
+                    setColour(Color.ORANGE);
+                }
+            }
+        }
+    };
 
     private final class ImageComponent extends JComponent {
 
