@@ -15,6 +15,7 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.*;
+import java.awt.image.DataBuffer;
 import java.io.*;
 import java.util.*;
 
@@ -117,7 +118,7 @@ public final class Screen implements ClockListener {
 
         if (renderer != null && renderer.isClockBased()) {
             final BufferedImage image = getImageToPaint();
-            Util.fillRect(image, Color.BLACK.getRGB(), 0, 0, image.getWidth(), image.getHeight());
+            Util.fillRect(image.getWritableTile(0, 0).getDataBuffer(), Color.BLACK.getRGB(), 0, 0, image.getWidth(), image.getHeight(), image.getWidth());
             renderer.vsync();
         } else {
             SwingUtilities.invokeLater(imageComponent::repaint);

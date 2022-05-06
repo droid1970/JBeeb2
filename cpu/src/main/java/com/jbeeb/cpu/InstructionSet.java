@@ -11,7 +11,7 @@ public final class InstructionSet {
     public static final int RTS_OPCODE = 0x60;
 
     private final Map<InstructionKey, Integer> instructionToCode = new HashMap<>();
-    private final Map<Integer, InstructionKey> codeToInstruction = new HashMap<>();
+    private final InstructionKey[] codeToInstruction = new InstructionKey[256];
     private final Map<Instruction, Set<AddressMode>> instructionSupportedAddressModes = new EnumMap<>(Instruction.class);
     private final Map<AddressMode, Set<Instruction>> addressModeToInstructions = new EnumMap<>(AddressMode.class);
 
@@ -179,19 +179,20 @@ public final class InstructionSet {
             throw new IllegalStateException(key + ": duplicate instruction key");
         }
         instructionToCode.put(key, opCode);
-        if (codeToInstruction.containsKey(opCode)) {
+        if (codeToInstruction[opCode] != null) {
             throw new IllegalStateException("0x" + Integer.toHexString(opCode) + ": duplicate opcode");
         }
         instructionSupportedAddressModes.computeIfAbsent(instruction, k -> EnumSet.noneOf(AddressMode.class)).add(addressMode);
         addressModeToInstructions.computeIfAbsent(addressMode, k -> EnumSet.noneOf(Instruction.class)).add(instruction);
-        codeToInstruction.put(opCode, key);
+        codeToInstruction[opCode] = key;
     }
 
     public InstructionKey decode(final int opcode) {
-        if (!codeToInstruction.containsKey(opcode)) {
+        final InstructionKey ret = codeToInstruction[opcode];
+        if (ret == null) {
             throw new IllegalStateException("0x" + Integer.toHexString(opcode) + ": unrecognised opcode");
         }
-        return codeToInstruction.get(opcode);
+        return ret;
     }
 
     public List<Integer> encode(final Instruction instruction, final AddressMode addressMode, final int parm) {

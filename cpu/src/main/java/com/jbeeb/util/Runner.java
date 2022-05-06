@@ -2,7 +2,6 @@ package com.jbeeb.util;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
@@ -18,26 +17,37 @@ public final class Runner {
     private long cycleCount;
     private long cycleCountSinceReset;
 
-    private final long frequencyHz;
-    private final long initialDelayNanos;
+    private long clockSpeed = 2_000_000;
+    private long initialDelayNanos;
     private long delayNanos;
+
     private long nextTickTime;
+
+    private volatile boolean throttled = true;
 
     public Runner(
             final SystemStatus systemStatus,
-            final long frequencyHz,
+            final int clockSpeed,
             final long maxCycleCount,
             final List<ClockListener> listeners
     ) {
         this.systemStatus = Objects.requireNonNull(systemStatus);
-        this.frequencyHz = frequencyHz;
-        this.delayNanos = 1_000_000_000L / frequencyHz;
-        this.initialDelayNanos = delayNanos;
+        setClockSpeed(clockSpeed);
         this.maxCycleCount = maxCycleCount;
         this.listeners = new ClockListener[listeners.size()];
         for (int i = 0; i < listeners.size(); i++) {
             this.listeners[i] = listeners.get(i);
         }
+    }
+
+    public synchronized void setClockSpeed(final int clockSpeed) {
+        this.clockSpeed = clockSpeed;
+        this.delayNanos = 1_000_000_000L / clockSpeed;
+        this.initialDelayNanos = delayNanos;
+    }
+
+    public void setFullSpeed(final boolean fullSpeed) {
+        this.throttled = !fullSpeed;
     }
 
     public long getCycleCount() {
@@ -81,7 +91,7 @@ public final class Runner {
     private void adjustDelay(final long durationNanos) {
         final double secs = (double) durationNanos / 1_000_000_000L;
         final double cps = cycleCountSinceReset / secs;
-        final double delta = cps / frequencyHz;
+        final double delta = cps / clockSpeed;
         delayNanos = Math.min(initialDelayNanos, Math.max(10L, (long) (delayNanos * delta)));
     }
 
@@ -94,7 +104,7 @@ public final class Runner {
     }
 
     private void nextCycle() {
-        while (nextTickTime > 0L && (System.nanoTime() < nextTickTime)) {
+        while (throttled && nextTickTime > 0L && (System.nanoTime() < nextTickTime)) {
             // Do nothing
         }
         nextTickTime += delayNanos;
