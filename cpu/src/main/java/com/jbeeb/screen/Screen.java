@@ -194,18 +194,22 @@ public final class Screen implements ClockListener {
             //
             // Labels
             //
-
-
             add(Box.createRigidArea(new Dimension(8,0)));
             clockIcon = new ClockIcon(12, 16, 1);
             clockIcon.setColour(Color.BLACK);
             clockLabel = createLabel();
+            clockLabel.setHorizontalAlignment(JLabel.RIGHT);
             clockLabel.setIcon(clockIcon);
+            clockLabel.setText("00.00 Mhz");
+            clockLabel.setPreferredSize(clockLabel.getPreferredSize());
+            clockLabel.setText("");
+
             add(clockLabel);
 
             capsLockLabel = createLabel();
             capsLockLabel.setText("caps");
             capsLockIcon = new LedIcon(12, 16, 1);
+            capsLockIcon.setOn(bbc.getSystemVIA().isCapslockLightOn());
             capsLockLabel.setIcon(capsLockIcon);
             bbc.getSystemVIA().setCapsLockChangedCallback(() -> {
                 capsLockIcon.setOn(bbc.getSystemVIA().isCapslockLightOn());
@@ -284,7 +288,7 @@ public final class Screen implements ClockListener {
             } catch (Exception ex) {
                 // Ignored
             }
-            clockLabel.setText("clock = " + mhzString);
+            clockLabel.setText(mhzString + " Mhz");
             final String displayRefreshString = systemStatus.getString(SystemStatus.KEY_AVG_DISPLAY_REFRESH_TIME_MILLIS, "?");
             screenLabel.setText("display (ms) = " + displayRefreshString);
         }
@@ -355,7 +359,7 @@ public final class Screen implements ClockListener {
 
         public void setRate(final double rate) {
             if (rate > 1.95 && rate < 2.1) {
-                setColour(Color.GREEN);
+                setColour(Color.GREEN.darker());
             } else {
                 if (rate < 2) {
                     setColour(Color.RED);
