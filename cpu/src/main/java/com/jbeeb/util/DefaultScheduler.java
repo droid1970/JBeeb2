@@ -7,8 +7,6 @@ import java.util.List;
 
 public class DefaultScheduler implements Scheduler, ClockListener {
 
-    private long cycleCount;
-
     private final List<ScheduleEntry> entries = new ArrayList<>();
     private final List<ScheduleEntry> entriesToRun = new ArrayList<>();
     private final List<ScheduleEntry> staleEntries = new ArrayList<>();
@@ -23,10 +21,7 @@ public class DefaultScheduler implements Scheduler, ClockListener {
         }
 
         boolean tick() {
-            if (--counter == 0) {
-                return true;
-            }
-            return false;
+            return --counter == 0;
         }
     }
 
@@ -49,7 +44,6 @@ public class DefaultScheduler implements Scheduler, ClockListener {
                 removeStaleEntries();
             }
         }
-        cycleCount++;
     }
 
     private void removeStaleEntries() {
