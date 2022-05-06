@@ -5,7 +5,6 @@ import com.jbeeb.keymap.KeyMap;
 import com.jbeeb.keymap.TargetKey;
 import com.jbeeb.sound.MultiSoundChip;
 import com.jbeeb.sound.NopSoundChip;
-import com.jbeeb.sound.SoundChip;
 import com.jbeeb.util.StateKey;
 import com.jbeeb.util.SystemStatus;
 

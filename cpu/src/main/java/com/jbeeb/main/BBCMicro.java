@@ -63,7 +63,7 @@ public final class BBCMicro implements InterruptSource {
 
     public BBCMicro() throws Exception {
 
-        this.systemStatus = new SystemStatusImpl();
+        this.systemStatus = new SystemStatus();
 
         this.videoULA = new VideoULA(
                 systemStatus,

@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 
 @StateKey(key = "cpu6502")
-public final class Cpu implements Device, ClockListener, Runnable, StatusProducer, Scheduler {
+public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
 
     private static final boolean USE_QUEUE = true;
 
@@ -111,7 +111,6 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
         scheduler.unschedule(task);
     }
 
-    @Override
     public SystemStatus getSystemStatus() {
         return systemStatus;
     }

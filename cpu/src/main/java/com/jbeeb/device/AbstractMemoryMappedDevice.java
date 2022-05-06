@@ -6,7 +6,7 @@ import com.jbeeb.util.*;
 import java.util.Objects;
 import java.util.UUID;
 
-public abstract class AbstractMemoryMappedDevice implements MemoryMappedDevice, StatusProducer {
+public abstract class AbstractMemoryMappedDevice implements MemoryMappedDevice {
 
     private final SystemStatus systemStatus;
 
@@ -26,7 +26,6 @@ public abstract class AbstractMemoryMappedDevice implements MemoryMappedDevice, 
         this.endAddress = startAddress + size - 1;
     }
 
-    @Override
     public SystemStatus getSystemStatus() {
         return systemStatus;
     }

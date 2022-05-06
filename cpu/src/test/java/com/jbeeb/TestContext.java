@@ -27,7 +27,7 @@ public final class TestContext {
         this.assembler = new Assembler(CODE_START, memory, instructionSet);
         this.assembler.assemble(statements);
         this.assembler.assemble("HLT");
-        this.cpu = new Cpu(SystemStatus.NOP, new DefaultScheduler(), memory);
+        this.cpu = new Cpu(new SystemStatus(), new DefaultScheduler(), memory);
         this.cpu.setVerboseSupplier(() -> false);
     }
 

@@ -8,49 +8,49 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public final class TypedProperties {
+public class TypedProperties {
 
     private final Map<String, String> map = new HashMap<>();
     private final Map<String, int[]> arrayMap = new HashMap<>();
 
-    public void putString(final String key, final String value) {
+    public final void putString(final String key, final String value) {
         map.put(Objects.requireNonNull(key), value);
     }
 
-    public boolean containsKey(String key) {
+    public final boolean containsKey(String key) {
         return map.containsKey(key) || arrayMap.containsKey(key);
     }
 
-    public void putBoolean(final String key, final boolean value) {
+    public final void putBoolean(final String key, final boolean value) {
         putString(key, Boolean.toString(value));
     }
 
-    public void putInt(final String key, final int value) {
+    public final void putInt(final String key, final int value) {
         putString(key, Integer.toString(value));
     }
 
-    public void putLong(final String key, final long value) {
+    public final void putLong(final String key, final long value) {
         putString(key, Long.toString(value));
     }
 
-    public void putDouble(final String key, final double value) {
+    public final void putDouble(final String key, final double value) {
         putString(key, Double.toString(value));
     }
 
-    public void putIntArray(final String key, final int[] array) {
+    public final void putIntArray(final String key, final int[] array) {
         arrayMap.put(key, Arrays.copyOf(array, array.length));
     }
 
-    public String getString(final String key, final String defaultValue) {
+    public final String getString(final String key, final String defaultValue) {
         return map.getOrDefault(Objects.requireNonNull(key), defaultValue);
     }
 
-    public boolean getBoolean(final String key, final boolean defaultValue) {
+    public final boolean getBoolean(final String key, final boolean defaultValue) {
         final String b = getString(key, Boolean.toString(defaultValue));
         return "true".equals(b);
     }
 
-    public int getInt(final String key, final int defaultValue) {
+    public final int getInt(final String key, final int defaultValue) {
         try {
             return Integer.parseInt(getString(key, "not a number"));
         } catch (Exception ex) {
@@ -58,7 +58,7 @@ public final class TypedProperties {
         }
     }
 
-    public long getLong(final String key, final long defaultValue) {
+    public final long getLong(final String key, final long defaultValue) {
         try {
             return Long.parseLong(getString(key, "not a number"));
         } catch (Exception ex) {
@@ -66,7 +66,7 @@ public final class TypedProperties {
         }
     }
 
-    public double getDouble(final String key, final double defaultValue) {
+    public final double getDouble(final String key, final double defaultValue) {
         try {
             return Double.parseDouble(getString(key, "not a number"));
         } catch (Exception ex) {
@@ -74,12 +74,12 @@ public final class TypedProperties {
         }
     }
 
-    public int[] getIntArray(final String key) {
+    public final int[] getIntArray(final String key) {
         final int[] arr = arrayMap.get(key);
         return Arrays.copyOf(arr, arr.length);
     }
 
-    public void write(final DataOutput out) throws IOException {
+    public final void write(final DataOutput out) throws IOException {
         out.writeInt(map.size());
 
         for (Map.Entry<String, String> e : map.entrySet()) {
