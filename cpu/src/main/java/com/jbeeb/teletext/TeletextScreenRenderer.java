@@ -5,8 +5,8 @@ import com.jbeeb.device.SystemVIA;
 import com.jbeeb.device.VideoULA;
 import com.jbeeb.screen.AbstractScreenRenderer;
 import com.jbeeb.memory.Memory;
+import com.jbeeb.screen.SystemPalette;
 
-import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
@@ -60,7 +60,7 @@ public final class TeletextScreenRenderer extends AbstractScreenRenderer {
 
         final int leftMargin = (img.getWidth() - (TELETEXT_CHAR_WIDTH * 40)) / 2;
 
-        g.setColor(Color.BLACK);
+        g.setColor(SystemPalette.BLACK);
         g.fillRect(0, 0, img.getWidth(), img.getHeight());
 
         final int unadjustedStartAddress = crtc6845.getScreenStartAddress();

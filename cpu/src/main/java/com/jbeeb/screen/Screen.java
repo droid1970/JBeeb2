@@ -84,6 +84,7 @@ public final class Screen implements ClockListener {
     }
 
     private int imageIndex;
+    private SystemPalette systemPalette = SystemPalette.DEFAULT;
 
     private BufferedImage getImageToPaint() {
         return (imageIndex & 1) == 0 ? image0 : image1;
@@ -127,7 +128,7 @@ public final class Screen implements ClockListener {
 
         if (renderer != null && renderer.isClockBased()) {
             final BufferedImage image = getImageToPaint();
-            Util.fillRect(image.getWritableTile(0, 0).getDataBuffer(), Color.BLACK.getRGB(), 0, 0, image.getWidth(), image.getHeight(), image.getWidth());
+            Util.fillRect(image.getWritableTile(0, 0).getDataBuffer(), systemPalette.getColour(0).getRGB(), 0, 0, image.getWidth(), image.getHeight(), image.getWidth());
             renderer.vsync();
         } else {
             SwingUtilities.invokeLater(imageComponent::repaint);
@@ -137,7 +138,7 @@ public final class Screen implements ClockListener {
     private void createAndShowUI() {
         final var frame = new JFrame("JavaBeeb");
 
-        frame.getContentPane().setBackground(Color.BLACK);
+        frame.getContentPane().setBackground(systemPalette.getColour(0));
         frame.getContentPane().add(BorderLayout.CENTER, imageComponent);
 
         final StatusBar statusBar = new StatusBar();
@@ -320,7 +321,7 @@ public final class Screen implements ClockListener {
 
         public ImageComponent() {
             setOpaque(false);
-            setBackground(Color.BLACK);
+            setBackground(systemPalette.getColour(0));
             setPreferredSize(new Dimension(IMAGE_WIDTH + IMAGE_BORDER_SIZE * 2, IMAGE_HEIGHT + IMAGE_BORDER_SIZE * 2));
             addKeyListener(new KeyHandler());
             disableCursor();
@@ -411,11 +412,13 @@ public final class Screen implements ClockListener {
                 }
                 ((Graphics2D) g).setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
                 final Rectangle ir = new Rectangle(px + IMAGE_BORDER_SIZE, py + IMAGE_BORDER_SIZE, pw - IMAGE_BORDER_SIZE * 2, ph - IMAGE_BORDER_SIZE * 2);
-                g.setColor(Color.BLACK);
+                g.setColor(systemPalette.getColour(0));
                 g.fillRect(ir.x - IMAGE_BORDER_SIZE / 2, ir.y - IMAGE_BORDER_SIZE / 2, ir.width + IMAGE_BORDER_SIZE, ir.height + IMAGE_BORDER_SIZE);
-                g.setColor(this.hasFocus() ? Color.GRAY : Color.DARK_GRAY);
-                g.drawRect(ir.x - IMAGE_BORDER_SIZE / 2, ir.y - IMAGE_BORDER_SIZE / 2, ir.width + IMAGE_BORDER_SIZE - 1, ir.height + IMAGE_BORDER_SIZE - 1);
                 g.drawImage(image, ir.x, ir.y, ir.width, ir.height, null);
+                if (!hasFocus()) {
+                    g.setColor(new Color(255, 255, 255, 64));
+                    g.fillRect(0, 0, getWidth(), getHeight());
+                }
             }
 
             totalRefreshTimeNanos += System.nanoTime() - startTime;

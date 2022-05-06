@@ -1,5 +1,6 @@
 package com.jbeeb.device;
 
+import com.jbeeb.screen.SystemPalette;
 import com.jbeeb.util.InterruptSource;
 import com.jbeeb.util.StateKey;
 import com.jbeeb.util.SystemStatus;
@@ -10,22 +11,22 @@ import java.awt.*;
 public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSource {
 
     private static final PhysicalColor[] PHYSICAL_COLORS = new PhysicalColor[]{
-            PhysicalColor.solid(Color.BLACK),
-            PhysicalColor.solid(Color.RED),
-            PhysicalColor.solid(Color.GREEN),
-            PhysicalColor.solid(Color.YELLOW),
-            PhysicalColor.solid(Color.BLUE),
-            PhysicalColor.solid(Color.MAGENTA),
-            PhysicalColor.solid(Color.CYAN),
-            PhysicalColor.solid(Color.WHITE),
-            PhysicalColor.flashing(Color.BLACK, Color.WHITE),
-            PhysicalColor.flashing(Color.RED, Color.CYAN),
-            PhysicalColor.flashing(Color.GREEN, Color.MAGENTA),
-            PhysicalColor.flashing(Color.YELLOW, Color.BLUE),
-            PhysicalColor.flashing(Color.BLUE, Color.YELLOW),
-            PhysicalColor.flashing(Color.MAGENTA, Color.GREEN),
-            PhysicalColor.flashing(Color.CYAN, Color.RED),
-            PhysicalColor.flashing(Color.WHITE, Color.BLACK)
+            PhysicalColor.solid(0),
+            PhysicalColor.solid(1),
+            PhysicalColor.solid(2),
+            PhysicalColor.solid(3),
+            PhysicalColor.solid(4),
+            PhysicalColor.solid(5),
+            PhysicalColor.solid(6),
+            PhysicalColor.solid(7),
+            PhysicalColor.flashing(0, 7),
+            PhysicalColor.flashing(1, 6),
+            PhysicalColor.flashing(2, 5),
+            PhysicalColor.flashing(3, 4),
+            PhysicalColor.flashing(4, 3),
+            PhysicalColor.flashing(5, 2),
+            PhysicalColor.flashing(6, 1),
+            PhysicalColor.flashing(7, 0)
     };
 
     private static final int[] BPP1_MASKS = {
@@ -50,6 +51,8 @@ public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSou
             0b10101010,
             0b01010101
     };
+
+    private SystemPalette systemPalette = SystemPalette.DEFAULT;
 
     @StateKey(key = "videoControlRegister")
     private int videoControlRegister;
@@ -170,7 +173,7 @@ public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSou
 
                 }
         }
-        return PHYSICAL_COLORS[palette[paletteIndex]].getCurrentColor(getSelectedFlashIndex());
+        return PHYSICAL_COLORS[palette[paletteIndex]].getCurrentColour(systemPalette, getSelectedFlashIndex());
     }
 
     public static int getLogicalColour(final int v, final int position, final int bitsPerPixel) {
@@ -195,24 +198,24 @@ public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSou
 
     private static final class PhysicalColor {
 
-        final Color color1;
-        final Color color2;
+        final int index1;
+        final int index2;
 
-        PhysicalColor(Color color1, Color color2) {
-            this.color1 = color1;
-            this.color2 = color2;
+        PhysicalColor(final int index1, final int index2) {
+            this.index1 = index1;
+            this.index2 = index2;
         }
 
-        Color getCurrentColor(final int flashIndex) {
-            return ((flashIndex & 1) == 0) ? color1 : color2;
+        Color getCurrentColour(final SystemPalette systemPalette, final int flashIndex) {
+            return systemPalette.getColour(((flashIndex & 1) == 0) ? index1 : index2);
         }
 
-        static PhysicalColor solid(final Color c) {
-            return new PhysicalColor(c, c);
+        static PhysicalColor solid(final int index) {
+            return new PhysicalColor(index, index);
         }
 
-        static PhysicalColor flashing(final Color c1, final Color c2) {
-            return new PhysicalColor(c1, c2);
+        static PhysicalColor flashing(final int index1, final int index2) {
+            return new PhysicalColor(index1, index2);
         }
     }
 }

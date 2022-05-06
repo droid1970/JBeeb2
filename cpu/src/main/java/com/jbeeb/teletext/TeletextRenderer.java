@@ -1,5 +1,7 @@
 package com.jbeeb.teletext;
 
+import com.jbeeb.screen.SystemPalette;
+
 import java.awt.*;
 
 final class TeletextRenderer {
@@ -27,6 +29,8 @@ final class TeletextRenderer {
     private boolean textShowing = true;
     private boolean bottom = true;
 
+    private SystemPalette systemPalette = SystemPalette.DEFAULT;
+
     public TeletextRenderer() {
         resetToDefaults();
     }
@@ -34,9 +38,9 @@ final class TeletextRenderer {
     public void resetToDefaults() {
         this.cellProcessorSet = alphaProcessorSet;
         this.foregroundIndex = 7;
-        this.background = Color.BLACK;
+        this.background = SystemPalette.BLACK;
         this.graphicsEnabled = false;
-        this.graphicsColour = Color.WHITE;
+        this.graphicsColour = SystemPalette.WHITE;
         this.flashing = false;
         this.doubleHeight = false;
         this.conceal = false;
@@ -46,10 +50,6 @@ final class TeletextRenderer {
 
     public int getForegroundIndex() {
         return foregroundIndex;
-    }
-
-    public Color getForeground() {
-        return TeletextConstants.getColour(foregroundIndex);
     }
 
     public Color getGraphicsColour() {
@@ -108,7 +108,7 @@ final class TeletextRenderer {
     }
 
     public void blackBackground() {
-        background = Color.BLACK;
+        background = SystemPalette.BLACK;
     }
 
     public void newBackground() {
