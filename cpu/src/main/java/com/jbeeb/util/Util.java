@@ -174,19 +174,9 @@ public final class Util {
 
     public static void cmp(final Cpu cpu, final int register, final int value) {
         final int result = (register - value) & 0xFF;
-        if (register < value) {
-            cpu.setFlag(Flag.ZERO, false);
-            cpu.setFlag(Flag.CARRY, false);
-            cpu.setFlag(Flag.NEGATIVE, (result & 0x80) != 0);
-        } else if (register > value) {
-            cpu.setFlag(Flag.ZERO, false);
-            cpu.setFlag(Flag.CARRY, true);
-            cpu.setFlag(Flag.NEGATIVE, (result & 0x80) != 0);
-        } else {
-            cpu.setFlag(Flag.ZERO, true);
-            cpu.setFlag(Flag.CARRY, true);
-            cpu.setFlag(Flag.NEGATIVE, false);
-        }
+        cpu.setFlag(Flag.ZERO, result == 0);
+        cpu.setFlag(Flag.NEGATIVE, (result & 0x80) != 0);
+        cpu.setFlag(Flag.CARRY, register >= value);
     }
 
     public static Cpu createCpu(final int codeStart, final String... statements) {

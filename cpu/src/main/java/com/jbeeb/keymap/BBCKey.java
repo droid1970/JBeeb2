@@ -1,5 +1,8 @@
 package com.jbeeb.keymap;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public enum BBCKey {
     SEMICOLON_PLUS(7, 5),
     MINUS(7, 1),
@@ -106,13 +109,21 @@ public enum BBCKey {
     NUMPAD0(10, 6),
     NUMPAD_DECIMAL_POINT(12, 4),
     NUMPADENTER(12, 3);
-    
+
+    private static final Map<ColRow, BBCKey> CODE_TO_KEY = new HashMap<>();
+    static {
+        for (BBCKey key : values()) {
+            CODE_TO_KEY.put(new ColRow(key.col, key.row), key);
+        }
+    }
+
     final int col;
     final int row;
     
     BBCKey(final int col, final int row) {
         this.col = col;
         this.row = row;
+
     }
 
     public int getCol() {
@@ -121,5 +132,9 @@ public enum BBCKey {
 
     public int getRow() {
         return row;
+    }
+
+    public static BBCKey forInternalCode(final int code) {
+        return CODE_TO_KEY.get(new ColRow(code & 0xF, (code >>> 4) & 0xF));
     }
 }

@@ -301,11 +301,11 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
         }
     }
 
-//    private final Map<Integer, Runnable> returnTo = new HashMap<>();
-//
-//    public void onReturnTo(final int address, Runnable runnable) {
-//        returnTo.put(address, runnable);
-//    }
+    private final Map<Integer, Runnable> returnTo = new HashMap<>();
+
+    public void onReturnTo(final int address, Runnable runnable) {
+        returnTo.put(address, runnable);
+    }
 
     private void execute() {
 
@@ -350,10 +350,10 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
                 });
                 queue(() -> setPCH(popByteNoIncrement()));
                 queue(() -> {
-//                    if (returnTo.containsKey(pc)) {
-//                        returnTo.get(pc).run();
-//                        returnTo.remove(pc);
-//                    }
+                    if (returnTo.containsKey(pc)) {
+                        returnTo.get(pc).run();
+                        returnTo.remove(pc);
+                    }
                     incPC();
                     //System.err.println("RTS to " + Util.formatHexWord(pc));
                 });
@@ -863,21 +863,21 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     }
 
     public void setA(final int value, final boolean maintainNZ) {
-        this.a = value;
+        this.a = value & 0xFF;
         if (maintainNZ) {
             maintainNZ(value);
         }
     }
 
     public void setX(final int value, final boolean maintainNZ) {
-        this.x = value;
+        this.x = value & 0xFF;
         if (maintainNZ) {
             maintainNZ(value);
         }
     }
 
     public void setY(final int value, final boolean maintainNZ) {
-        this.y = value;
+        this.y = value & 0xFF;
         if (maintainNZ) {
             maintainNZ(value);
         }
@@ -888,7 +888,7 @@ public final class Cpu implements Device, ClockListener, Runnable, StatusProduce
     }
 
     public void setSP(final int value) {
-        this.sp = value;
+        this.sp = value & 0xFF;
     }
 
     public int getA() {

@@ -6,14 +6,15 @@ import com.jbeeb.cpu.Flag;
 import com.jbeeb.cpu.InstructionSet;
 import com.jbeeb.device.*;
 import com.jbeeb.disk.FloppyDiskController;
-import com.jbeeb.localfs.FilingSystemROM;
+import com.jbeeb.keymap.BBCKey;
+import com.jbeeb.localfs.FilingSystem;
+import com.jbeeb.localfs.LocalFilingSystem;
 import com.jbeeb.memory.*;
 import com.jbeeb.screen.Screen;
 import com.jbeeb.util.*;
 
 import java.io.File;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
@@ -112,7 +113,7 @@ public final class BBCMicro implements InterruptSource {
 
         final ReadOnlyMemory basicRom = ReadOnlyMemory.fromResource(0x8000, BASIC_ROM_RESOURCE_NAME);
         final ReadOnlyMemory dfsRom = ReadOnlyMemory.fromResource(0x8000, DFS_ROM_RESOURCE_NAME);
-        final FilingSystemROM filingSystemROM = new FilingSystemROM("My DFS", "(C) Ian T 2022");
+        final FilingSystem filingSystemROM = new LocalFilingSystem("Local DFS", "(C) Ian T 2022");
         final Map<Integer, ReadOnlyMemory> roms = new HashMap<>();
         roms.put(15, basicRom);
 
@@ -141,23 +142,8 @@ public final class BBCMicro implements InterruptSource {
         crtc6845.addVSyncListener(screen::vsync);
 
         this.cpu = new Cpu(systemStatus, scheduler, memory);
-//        testRom.installIntercept(0x9000, new AtomicFetchIntercept(cpu, () -> {
-//            System.err.println("Test ROM entered: A = " + cpu.getA() + " X = " + cpu.getX() + " Y = " + cpu.getY());
-//            switch (cpu.getA()) {
-//                case 9:
-//                    int addr = memory.readWord(0xF2) + cpu.getY();
-//                    StringBuilder s = new StringBuilder();
-//                    while (memory.readByte(addr) != 0xd) {
-//                        s.append((char) memory.readByte(addr++));
-//                    }
-//                    System.err.println("*HELP " + s);
-//                    break;
-//            }
-//            if (cpu.getA() == 1) {
-//                cpu.setY(cpu.getY() + 1, true);
-//            }
-//        }));
-        filingSystemROM.initialise(memory, cpu);
+        filingSystemROM.initialise(cpu, memory);
+
         cpu.setVerboseSupplier(() -> false);
         if (fdc != null) {
             this.fdc.setCpu(cpu);
@@ -177,57 +163,37 @@ public final class BBCMicro implements InterruptSource {
             addInterruptSource(fdc);
         }
         cpu.setInterruptSource(this);
-//        scheduler.newTask(() -> {
-//            System.err.println("INSV = " + Util.formatHexWord(memory.readWord(0x22a)));
-//        }).schedule(2_000_000);
-//        scheduler.newTask(() -> {
-//            try {
-//                final Disassembler dis = new Disassembler(new InstructionSet(), memory);
-//                dis.setPC(0xfff4);
-//                for (int i = 0; i < 10; i++) {
-//                    System.err.println(dis.disassemble());
-//                }
-//            } catch (Exception ex) {
-//                ex.printStackTrace();
-//            }
-//        }).schedule(2_000_000);
+        scheduler.newTask(() -> {
+            try {
+                final Disassembler dis = new Disassembler(new InstructionSet(), memory);
+                dis.setPC(0x1C28);
+                for (int i = 0; i < 100; i++) {
+                    System.out.println(dis.disassemble());
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }).schedule(50_000_000);
 
         final int KEYV = 0xEF02;
         final int INSV = 0xE4B3;
 
-        if (true) memory.installIntercept(INSV, new AtomicFetchIntercept(cpu, () -> {
-            System.err.println("INSV: A = " + cpu.getA() + " X = " + cpu.getX());
-//            final boolean C = cpu.isFlagSet(Flag.CARRY);
-//            final boolean V = cpu.isFlagSet(Flag.OVERFLOW);
-//            if (!C && !V) {
-//                final int retLO = cpu.peekByte(7);
-//                final int retHI = cpu.peekByte(8);
-//                final int ret = (retLO & 0xFF) | ((retHI & 0xFF) << 8);
-//                for (int i = 0; i < 10; i++) {
-//                    System.err.println("stack " + i + " = " + Util.formatHexByte(cpu.peekByte(i)));
-//                }
-//                //cpu.onReturnTo(ret, () -> System.err.println("KEYV - returned with SHIFT pressed = " + cpu.isFlagSet(Flag.NEGATIVE) + " CTRL pressed = " + cpu.isFlagSet(Flag.OVERFLOW)));
-////                final int retLO = cpu.peekByte(0);
-////                final int retHI = cpu.peekByte(1);
-////                final int ret = (retLO & 0xFF) | ((retHI & 0xFF) << 8);
-////                cpu.onReturnTo(ret  - 2, () -> System.err.println("returned"));
-////                memory.installIntercept(ret + 2, new AtomicFetchIntercept(cpu, () -> System.err.println("ret0")), false);
-//                System.err.println("KEYV - test SHIFT/CTRL");
-//            } else if (C && !V) {
-////                final int retLO = cpu.peekByte(7);
-////                final int retHI = cpu.peekByte(8);
-////                final int ret = (retLO & 0xFF) | ((retHI & 0xFF) << 8);
-//////                for (int i = 0; i < 10; i++) {
-//////                    System.err.println("stack " + i + " = " + Util.formatHexByte(cpu.peekByte(i)));
-//////                }
-////                cpu.onReturnTo(ret, () -> System.err.println("KEYV - returned with key pressed = " + ((cpu.getX() & 0x80) != 0)));
-////                System.err.println("KEYV - scan keyboard (OSBYTE &79): code = " + Util.formatHexByte(cpu.getX() & 0x7f) + " scan = " + ((cpu.getX() & 0x80) != 0) + " ret = " + Util.formatHexWord(ret));
-////                memory.installIntercept(ret, new AtomicFetchIntercept(cpu, () -> System.err.println("ret0")), false);
-//            } else if (!C && V) {
-//                System.err.println("KEYV - key pressed interrupt");
-//            } else {
-//                System.err.println("KEYV - timer interrupt entry");
-//            }
+        if (true) memory.installIntercept(KEYV, new AtomicFetchIntercept(cpu, () -> {
+            final boolean C = cpu.isFlagSet(Flag.CARRY);
+            final boolean V = cpu.isFlagSet(Flag.OVERFLOW);
+            if (!C && !V) {
+                //System.err.println("KEYV - test SHIFT/CTRL");
+            } else if (C && !V) {
+                final int retLO = cpu.peekByte(7);
+                final int retHI = cpu.peekByte(8);
+                final int ret = (retLO & 0xFF) | ((retHI & 0xFF) << 8);
+                //cpu.onReturnTo(ret, () -> System.err.println("KEYV - returned to " + Util.formatHexWord(ret + 1) + " with key pressed = " + ((cpu.getX() & 0x80) != 0)));
+                //System.err.println("KEYV - scan keyboard (OSBYTE &79): code = " + Util.formatHexByte(cpu.getX() & 0x7f) + " key = " + BBCKey.forInternalCode(cpu.getX() & 0x7F) + " scan = " + ((cpu.getX() & 0x80) != 0) + " ret = " + Util.formatHexWord(ret));
+            } else if (!C && V) {
+                //System.err.println("KEYV - key pressed interrupt");
+            } else {
+                //System.err.println("KEYV - timer interrupt entry");
+            }
         }), false);
     }
 

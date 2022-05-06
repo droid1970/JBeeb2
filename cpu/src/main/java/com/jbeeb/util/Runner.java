@@ -93,9 +93,9 @@ public final class Runner {
     }
 
     private void nextCycle() {
-//        while (nextTickTime > 0L && (System.nanoTime() < nextTickTime)) {
-//            // Do nothing
-//        }
+        while (nextTickTime > 0L && (System.nanoTime() < nextTickTime)) {
+            // Do nothing
+        }
         nextTickTime += delayNanos;
     }
 }
