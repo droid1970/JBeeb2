@@ -8,6 +8,7 @@ import com.jbeeb.disk.DiskDetails;
 import com.jbeeb.memory.Memory;
 
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
 import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -410,10 +411,28 @@ public final class Util {
         }
     }
 
+    public static void fillRect(final DataBuffer buf, final int rgb, final int x, final int y, final int width, final int height, final int imageWidth) {
+        for (int rx = x; rx < x + width; rx++) {
+            for (int ry = y; ry < y + height; ry++) {
+                int i = (ry * imageWidth) + (rx % imageWidth);
+                buf.setElem(i, rgb);
+            }
+        }
+    }
+
     public static void fillRectXOR(final BufferedImage img, final int rgb, final int x, final int y, final int width, final int height) {
         for (int rx = x; rx < x + width; rx++) {
             for (int ry = y; ry < y + height; ry++) {
                 img.setRGB(rx, ry, ((img.getRGB(rx, ry) & 0xFFFFFF) ^ (rgb & 0xFFFFFF)) | 0xFF000000);
+            }
+        }
+    }
+
+    public static void fillRectXOR(final DataBuffer buf, final int rgb, final int x, final int y, final int width, final int height, final int imageWidth) {
+        for (int rx = x; rx < x + width; rx++) {
+            for (int ry = y; ry < y + height; ry++) {
+                final int i = (ry * imageWidth) + (rx % imageWidth);
+                buf.setElem(i, ((buf.getElem(i) & 0xFFFFFF) ^ (rgb & 0xFFFFFF)) | 0xFF000000);
             }
         }
     }

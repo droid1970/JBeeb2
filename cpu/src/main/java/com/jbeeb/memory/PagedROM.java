@@ -32,6 +32,16 @@ public final class PagedROM implements Memory {
     }
 
     @Override
+    public int getMinAddress() {
+        return startAddess;
+    }
+
+    @Override
+    public int getMaxAddress() {
+        return startAddess + size - 1;
+    }
+
+    @Override
     public int readByte(int address) {
         final ReadOnlyMemory rom = roms[selector.getSelectedSlot()];
         return (rom == null) ?  0 : rom.readByte(address);

@@ -11,6 +11,10 @@ public interface Memory {
     int KB = 1024;
 
     boolean hasAddress(int address);
+
+    int getMinAddress();
+    int getMaxAddress();
+
     int readByte(int address);
     void writeByte(int address, int value);
 

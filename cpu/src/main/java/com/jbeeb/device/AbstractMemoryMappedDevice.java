@@ -47,6 +47,16 @@ public abstract class AbstractMemoryMappedDevice implements MemoryMappedDevice, 
     }
 
     @Override
+    public int getMinAddress() {
+        return startAddress;
+    }
+
+    @Override
+    public int getMaxAddress() {
+        return endAddress;
+    }
+
+    @Override
     public final int readByte(int address) {
         final int ret = readRegister(address - startAddress) & 0xFF;
         if (verbose) {

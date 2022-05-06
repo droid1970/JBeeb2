@@ -9,6 +9,7 @@ import com.jbeeb.util.Util;
 import java.awt.Color;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
 import java.util.Objects;
 
 public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
@@ -113,6 +114,10 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
     }
 
     private void paintNextCharacter(final BufferedImage img) {
+
+        final DataBuffer dataBuffer = img.getWritableTile(0, 0).getDataBuffer();
+        final int imageWidth = img.getWidth();
+
         if (scanLine >= scanLineCount) {
             return;
         }
@@ -131,7 +136,12 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
         int py = computeCharY(scanLine, scanLinesPerChar, pixelHeight);
         for (int b = 0; b < pixelsPerChar; b++) {
             final int rgb = videoULA.getPhysicalColor(v, b).getRGB() & 0xFFFFFF;
-            Util.fillRect(img, rgb, px, py, pixelWidth, pixelHeight);
+            try {
+                Util.fillRect(dataBuffer, rgb, px, py, pixelWidth, pixelHeight, imageWidth);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                int xxx = 1;
+            }
             px += pixelWidth;
         }
 
@@ -151,11 +161,12 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
                 final int cursorStart = crtc6845.getCursorStartLine();;
                 final int cursorHeight = (crtc6845.getCursorEndLine() - cursorStart) * pixelHeight;
                 if (cursorHeight > 0) {
-                    Util.fillRectXOR(img, Color.WHITE.getRGB(),
+                    Util.fillRectXOR(dataBuffer, Color.WHITE.getRGB(),
                             cursorRect.x,
                             cursorRect.y + cursorStart * pixelHeight,
                             cursorRect.width,
-                            cursorHeight
+                            cursorHeight,
+                            imageWidth
                     );
                 }
                 cursorRect = null;

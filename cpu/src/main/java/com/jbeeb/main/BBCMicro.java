@@ -6,7 +6,6 @@ import com.jbeeb.cpu.Flag;
 import com.jbeeb.cpu.InstructionSet;
 import com.jbeeb.device.*;
 import com.jbeeb.disk.FloppyDiskController;
-import com.jbeeb.keymap.BBCKey;
 import com.jbeeb.localfs.FilingSystem;
 import com.jbeeb.localfs.LocalFilingSystem;
 import com.jbeeb.memory.*;
@@ -29,7 +28,7 @@ public final class BBCMicro implements InterruptSource {
 
     private static final int SHEILA = 0xFE00;
 
-    private final List<InterruptSource> interruptSources = new ArrayList<>();
+    private InterruptSource[] interruptSources = new InterruptSource[0];
     private final SystemStatus systemStatus;
 
     private final VideoULA videoULA;
@@ -163,7 +162,7 @@ public final class BBCMicro implements InterruptSource {
             addInterruptSource(fdc);
         }
         cpu.setInterruptSource(this);
-        scheduler.newTask(() -> {
+        if (false) scheduler.newTask(() -> {
             try {
                 final Disassembler dis = new Disassembler(new InstructionSet(), memory);
                 dis.setPC(0x1C28);
@@ -178,7 +177,7 @@ public final class BBCMicro implements InterruptSource {
         final int KEYV = 0xEF02;
         final int INSV = 0xE4B3;
 
-        if (true) memory.installIntercept(KEYV, new AtomicFetchIntercept(cpu, () -> {
+        if (false) memory.installIntercept(KEYV, new AtomicFetchIntercept(cpu, () -> {
             final boolean C = cpu.isFlagSet(Flag.CARRY);
             final boolean V = cpu.isFlagSet(Flag.OVERFLOW);
             if (!C && !V) {
@@ -258,7 +257,8 @@ public final class BBCMicro implements InterruptSource {
     }
 
     public void addInterruptSource(final InterruptSource source) {
-        this.interruptSources.add(source);
+        interruptSources = Arrays.copyOf(interruptSources, interruptSources.length + 1);
+        interruptSources[interruptSources.length - 1] = source;
     }
 
     @Override

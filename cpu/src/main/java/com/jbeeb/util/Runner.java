@@ -13,7 +13,7 @@ public final class Runner {
     private static final long ADJUST_MASK = 0xFF;
 
     private final SystemStatus systemStatus;
-    private final List<ClockListener> listeners = new ArrayList<>();
+    private final ClockListener[] listeners;
     private final long maxCycleCount;
     private long cycleCount;
     private long cycleCountSinceReset;
@@ -34,7 +34,10 @@ public final class Runner {
         this.delayNanos = 1_000_000_000L / frequencyHz;
         this.initialDelayNanos = delayNanos;
         this.maxCycleCount = maxCycleCount;
-        this.listeners.addAll(listeners);
+        this.listeners = new ClockListener[listeners.size()];
+        for (int i = 0; i < listeners.size(); i++) {
+            this.listeners[i] = listeners.get(i);
+        }
     }
 
     public long getCycleCount() {
@@ -85,10 +88,8 @@ public final class Runner {
     private Runnable saveStateCallback;
 
     private void tick() {
-        if (!listeners.isEmpty()) {
-            for (ClockListener l : listeners) {
-                l.tick();
-            }
+        for (ClockListener l : listeners) {
+            l.tick();
         }
     }
 

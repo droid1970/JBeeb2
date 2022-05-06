@@ -37,6 +37,16 @@ public abstract class AbstractMemory implements Memory {
     }
 
     @Override
+    public int getMinAddress() {
+        return start;
+    }
+
+    @Override
+    public int getMaxAddress() {
+        return start + memory.length - 1;
+    }
+
+    @Override
     public int readByte(int address) {
         final int ret = memory[computeIndex(address)];
         return ret;
