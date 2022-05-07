@@ -98,9 +98,9 @@ public final class Screen implements ClockListener {
     }
 
     @Override
-    public void tick(final int clockRate) {
+    public void tick(final ClockSpeed clockSpeed, final long elapsedNanos) {
         if (renderer != null && renderer.isClockBased()) {
-            renderer.tick(getImageToPaint());
+            renderer.tick(getImageToPaint(), clockSpeed, elapsedNanos);
         }
     }
 

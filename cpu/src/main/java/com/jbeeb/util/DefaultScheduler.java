@@ -1,6 +1,7 @@
 package com.jbeeb.util;
 
 import com.jbeeb.clock.ClockListener;
+import com.jbeeb.clock.ClockSpeed;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +27,7 @@ public class DefaultScheduler implements Scheduler, ClockListener {
     }
 
     @Override
-    public void tick(final int clockRate) {
+    public void tick(final ClockSpeed clockSpeed, final long elapsedNanos) {
         if (!entries.isEmpty()) {
             entriesToRun.clear();
             boolean run = false;

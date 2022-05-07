@@ -1,5 +1,6 @@
 package com.jbeeb.device;
 
+import com.jbeeb.clock.ClockSpeed;
 import com.jbeeb.util.InterruptSource;
 import com.jbeeb.clock.ClockListener;
 import com.jbeeb.util.StateKey;
@@ -7,7 +8,7 @@ import com.jbeeb.util.SystemStatus;
 
 public class VIA extends AbstractMemoryMappedDevice implements ClockListener, InterruptSource {
 
-    private static final int CLOCK_RATE = 2_000_000;
+    private static final int CLOCK_RATE = ClockSpeed.TWO_MHZ;
 
     private static final int ORB = 0x0;
     private static final int ORA = 0x1;
@@ -110,7 +111,8 @@ public class VIA extends AbstractMemoryMappedDevice implements ClockListener, In
     @StateKey(key = "t1_pb7")
     protected int t1_pb7;
 
-    private long cycleCount;
+    private long inputCycleCount;
+    private long myCycleCount;
 
     public VIA(
             final SystemStatus systemStatus,
@@ -142,18 +144,14 @@ public class VIA extends AbstractMemoryMappedDevice implements ClockListener, In
     }
 
     @Override
-    public void tick(int clockRate) {
-        int cycles = 1;
-        if (clockRate > CLOCK_RATE) {
-            // Maybe skip this
-            final int stretch = clockRate / CLOCK_RATE;
-            if ((cycleCount % stretch) != 0) {
-                cycleCount++;
-                return;
-            }
-        } else if (clockRate < CLOCK_RATE) {
-            cycles = CLOCK_RATE / clockRate;
+    public void tick(final ClockSpeed clockSpeed, final long elapsedNanos) {
+        final int cycles = clockSpeed.computeElapsedCycles(CLOCK_RATE, inputCycleCount, myCycleCount, elapsedNanos);
+        inputCycleCount++;
+        myCycleCount += cycles;
+        if (cycles <= 0) {
+            return;
         }
+
         justhit = 0;
         int newT1c = t1c - cycles;
         if (newT1c < -2 && t1c > -3) {
@@ -189,8 +187,6 @@ public class VIA extends AbstractMemoryMappedDevice implements ClockListener, In
             }
             t2c = newT2c;
         }
-
-        cycleCount++;
     }
 
     @Override

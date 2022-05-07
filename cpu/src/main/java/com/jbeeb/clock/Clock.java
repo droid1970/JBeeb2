@@ -67,11 +67,17 @@ public final class Clock {
     }
 
     public void run(final BooleanSupplier stopCondition) {
-        long startTime = System.nanoTime();
+        final long firstStartTime = System.nanoTime();
+        long startTime = firstStartTime;
         this.nextTickTime = startTime + delayNanos;
         while (!stopCondition.getAsBoolean()) {
-            awaitNextCycle();
-            tick();
+            final long nanoTime = awaitNextCycle();
+
+            // Send tick to all the listeners
+            for (ClockListener l : listeners) {
+                l.tick(clockSpeed, nanoTime - firstStartTime);
+            }
+
             cycleCount++;
             cycleCountSinceReset++;
             if (cycleCount >= maxCycleCount) {
@@ -109,16 +115,12 @@ public final class Clock {
         delayNanos = Math.min(initialDelayNanos, Math.max(10L, (long) (delayNanos * delta)));
     }
 
-    private void tick() {
-        for (ClockListener l : listeners) {
-            l.tick(Math.min(clockSpeed.getClockRate(), MAX_REPORTED_CLOCK_RATE));
-        }
-    }
-
-    private void awaitNextCycle() {
-        while (clockSpeed.isThrottled() && nextTickTime > 0L && (System.nanoTime() < nextTickTime)) {
-            // Do nothing
-        }
+    private long awaitNextCycle() {
+        long nanoTime;
+        do {
+            nanoTime = System.nanoTime();
+        } while (clockSpeed.isThrottled() && nextTickTime > 0L && ((nextTickTime - nanoTime) > 0));
         nextTickTime += delayNanos;
+        return nanoTime;
     }
 }

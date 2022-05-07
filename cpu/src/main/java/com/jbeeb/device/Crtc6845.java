@@ -1,6 +1,7 @@
 package com.jbeeb.device;
 
 import com.jbeeb.clock.ClockListener;
+import com.jbeeb.clock.ClockSpeed;
 import com.jbeeb.util.*;
 
 import java.util.ArrayList;
@@ -10,7 +11,10 @@ import java.util.Objects;
 @StateKey(key = "crtc6845")
 public class Crtc6845 extends AbstractMemoryMappedDevice implements InterruptSource, ClockListener {
 
-    private static final int VERTICAL_SYNC_FREQUENCY_HZ = 50;
+    private static final int CLOCK_RATE = ClockSpeed.TWO_MHZ;
+
+    private static final int VERTICAL_SYNC_FREQUENCY_HZ = ClockSpeed.FIFTY_HZ;
+    private static final int VERTICAL_SYNC_2MHZ_CYCLES = CLOCK_RATE / VERTICAL_SYNC_FREQUENCY_HZ;
 
     private static final int FAST_CURSOR_VSYNCS = 8;
     private static final int SLOW_CURSOR_VSYNCS = 16;
@@ -25,8 +29,11 @@ public class Crtc6845 extends AbstractMemoryMappedDevice implements InterruptSou
     @StateKey(key = "registers")
     private final int[] registers = new int[18];
 
-    private long cycleCount;
     private boolean cursorOn;
+    private long inputCycleCount = 0L;
+    private long myCycleCount = 0L;
+    private long lastVSync = -VERTICAL_SYNC_2MHZ_CYCLES;
+    private long lastCursorBlink = 0L;
 
     public Crtc6845(
             final SystemStatus systemStatus,
@@ -47,22 +54,24 @@ public class Crtc6845 extends AbstractMemoryMappedDevice implements InterruptSou
     }
 
     @Override
-    public void tick(final int clockRate) {
-        final long verticalSyncCycleCount = clockRate / VERTICAL_SYNC_FREQUENCY_HZ;
-        final long cursorToggleCycles = verticalSyncCycleCount * ((isCursorFastBlink()) ? FAST_CURSOR_VSYNCS : SLOW_CURSOR_VSYNCS);
-        if ((cycleCount % cursorToggleCycles) == 0) {
-            cursorOn = !cursorOn;
-        }
-        final long syncCycle = (cycleCount % verticalSyncCycleCount);
-        if (syncCycle == 0) {
+    public void tick(final ClockSpeed clockSpeed, final long elapsedNanos) {
+        final long cyclesSinceLastVSync = myCycleCount - lastVSync;
+        if ((cyclesSinceLastVSync >= VERTICAL_SYNC_2MHZ_CYCLES)) {
             systemVIA.setCA1(true);
             verticalSync();
-        } else {
-            if (syncCycle == 500) {
-                systemVIA.setCA1(false);
-            }
+            lastVSync = myCycleCount;
+        } else if (cyclesSinceLastVSync > 500) {
+            systemVIA.setCA1(false);
         }
-        cycleCount++;
+
+        final long cursorToggleCycles = VERTICAL_SYNC_2MHZ_CYCLES * ((isCursorFastBlink()) ? FAST_CURSOR_VSYNCS : SLOW_CURSOR_VSYNCS);
+        final long cyclesSinceLastCursorBlink = myCycleCount - lastCursorBlink;
+        if (cyclesSinceLastCursorBlink >= cursorToggleCycles) {
+            cursorOn = !cursorOn;
+            lastCursorBlink = myCycleCount;
+        }
+        myCycleCount += clockSpeed.computeElapsedCycles(CLOCK_RATE, inputCycleCount, myCycleCount, elapsedNanos);
+        inputCycleCount++;
     }
 
     public void addVSyncListener(final Runnable l) {

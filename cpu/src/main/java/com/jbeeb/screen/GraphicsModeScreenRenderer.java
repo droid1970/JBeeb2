@@ -1,5 +1,6 @@
 package com.jbeeb.screen;
 
+import com.jbeeb.clock.ClockSpeed;
 import com.jbeeb.device.Crtc6845;
 import com.jbeeb.device.SystemVIA;
 import com.jbeeb.device.VideoULA;
@@ -14,10 +15,14 @@ import java.util.Objects;
 
 public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
 
+    private static final int CLOCK_RATE = ClockSpeed.TWO_MHZ;
+
     private final Screen screen;
 
-    private long cyclesSinceSync = 0L;
-    private long ticksSinceSync = 0L;
+    private long inputCycleCount = 0L;
+    private long myCycleCount = 0L;
+
+    private long myCyclesSinceSync = 0L;
 
     private Rectangle cursorRect;
 
@@ -81,9 +86,9 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
         pixelWidth = bitsPerPixel * (fastClock ? 1 : 2);
         pixelHeight = 2;
 
-        cyclesSinceSync = 0L;
-        ticksSinceSync = 0L;
+        myCyclesSinceSync = 0L;
         charPos = 0;
+        //System.err.println("scanline at sync = " + scanLine);
         scanLine = 0;
         cursorRect = null;
     }
@@ -94,18 +99,27 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
     }
 
     @Override
-    public void tick(final BufferedImage image) {
-        if (fastClock || ((cyclesSinceSync & 1) == 0)) {
-            if ((ticksSinceSync % horizontalTotalChars) < horizontalDisplayedChars) {
-                try {
-                    paintNextCharacter(image);
-                } catch (Exception ex) {
-                    // Deliberately ignored
+    public void tick(final BufferedImage image, final ClockSpeed clockSpeed, final long elapsedNanos) {
+        final int cycles = clockSpeed.computeElapsedCycles(CLOCK_RATE, inputCycleCount, myCycleCount, elapsedNanos);
+        inputCycleCount++;
+        myCycleCount += cycles;
+        if (cycles <= 0) {
+            // Nothing to do yet
+            return;
+        }
+
+        for (int i = 0; i < cycles; i++) {
+            if (fastClock || ((myCyclesSinceSync & 1) == 0)) {
+                if ((myCyclesSinceSync % horizontalTotalChars) < horizontalDisplayedChars) {
+                    try {
+                        paintNextCharacter(image);
+                    } catch (Exception ex) {
+                        // Deliberately ignored
+                    }
                 }
             }
-            ticksSinceSync++;
+            myCyclesSinceSync++;
         }
-        cyclesSinceSync++;
     }
 
     @Override
