@@ -23,6 +23,7 @@ public class MultiSoundChannel extends Thread {
     private double[] volume;
 
     private volatile boolean stopRequested = false;
+    private volatile boolean paused;
 
     public MultiSoundChannel(final WaveGenerator[] waveGenerators) throws LineUnavailableException {
         this.channelCount = waveGenerators.length;
@@ -50,13 +51,17 @@ public class MultiSoundChannel extends Thread {
         this.waveGenerators[channelIndex].setFrequency(frequency, SAMPLE_RATE);
     }
 
+    public void setPaused(final boolean paused) {
+        this.paused = paused;
+    }
+
     @Override
     public void run() {
         try {
             while (!stopRequested) {
                 for (int c = 0; c < channelCount; c++) {
                     for (int i = 0; i < data[c].length; i++) {
-                        final double wv = waveGenerators[c].next();
+                        final double wv = (paused) ? 0.0 : waveGenerators[c].next();
                         final byte b = (byte) (127 * wv * volume[c]);
                         data[c][i] = b;
                     }

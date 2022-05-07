@@ -337,6 +337,19 @@ public final class Screen implements ClockListener {
                     requestFocus();
                 }
             });
+            addFocusListener(new FocusListener() {
+                @Override
+                public void focusGained(FocusEvent e) {
+                    bbc.getClock().setPaused(false);
+                    repaint();
+                }
+
+                @Override
+                public void focusLost(FocusEvent e) {
+                    bbc.getClock().setPaused(true);
+                    repaint();
+                }
+            });
         }
 
         void enableCursor(final int enableTime) {
@@ -416,7 +429,7 @@ public final class Screen implements ClockListener {
                 g.fillRect(ir.x - IMAGE_BORDER_SIZE / 2, ir.y - IMAGE_BORDER_SIZE / 2, ir.width + IMAGE_BORDER_SIZE, ir.height + IMAGE_BORDER_SIZE);
                 g.drawImage(image, ir.x, ir.y, ir.width, ir.height, null);
                 if (!hasFocus()) {
-                    g.setColor(new Color(255, 255, 255, 64));
+                    g.setColor(new Color(255, 255, 255, 128));
                     g.fillRect(0, 0, getWidth(), getHeight());
                 }
             }

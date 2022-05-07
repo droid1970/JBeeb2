@@ -474,4 +474,12 @@ public final class Util {
         }
         return s;
     }
+
+    public static void sleep(final int millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
+    }
 }

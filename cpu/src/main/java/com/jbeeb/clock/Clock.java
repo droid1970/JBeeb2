@@ -25,6 +25,8 @@ public final class Clock {
 
     private long nextTickTime;
 
+    private volatile boolean paused;
+
     public Clock(
             final SystemStatus systemStatus,
             final ClockSpeed clockSpeed,
@@ -52,6 +54,12 @@ public final class Clock {
 
     public long getCycleCount() {
         return cycleCount;
+    }
+
+    public void setPaused(final boolean paused) {
+        for (ClockListener l : listeners) {
+            l.setPaused(paused);
+        }
     }
 
     public void run(final BooleanSupplier stopCondition) {

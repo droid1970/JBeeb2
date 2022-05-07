@@ -88,6 +88,8 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
 
     private final Scheduler scheduler;
 
+    private volatile boolean paused;
+
     public Cpu(final SystemStatus systemStatus, final Scheduler scheduler, final Memory memory) {
         this.systemStatus = Objects.requireNonNull(systemStatus);
         this.scheduler = Objects.requireNonNull(scheduler);
@@ -220,12 +222,20 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
     }
 
     @Override
+    public void setPaused(final boolean paused) {
+        this.paused = paused;
+    }
+
+    @Override
     public void tick(final int clockRate) {
         scheduler.tick(clockRate);
         pcDis = pc;
         if (queue.isEmpty()) {
             if (!servicingInterrupt) {
                 // We are quiescent here
+                while (paused) {
+                    Util.sleep(100);
+                }
                 if (saveStateCallback != null) {
                     saveStateCallback.run();
                     saveStateCallback = null;

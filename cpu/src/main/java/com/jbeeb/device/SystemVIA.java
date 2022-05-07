@@ -5,6 +5,7 @@ import com.jbeeb.keymap.KeyMap;
 import com.jbeeb.keymap.TargetKey;
 import com.jbeeb.sound.MultiSoundChip;
 import com.jbeeb.sound.NopSoundChip;
+import com.jbeeb.sound.SoundChip;
 import com.jbeeb.util.StateKey;
 import com.jbeeb.util.SystemStatus;
 
@@ -21,7 +22,7 @@ public class SystemVIA extends VIA {
     private final boolean[][] keyDown = new boolean[16][16];
     private final Boolean[][] keyDownShift = new Boolean[16][16];
     private ColRow lastKeyDown = null;
-    private final IntConsumer soundChip = createSoundChip();
+    private final SoundChip soundChip = createSoundChip();
 
     @StateKey(key = "IC32")
     private int IC32;
@@ -35,7 +36,7 @@ public class SystemVIA extends VIA {
     private Runnable capsLockChangedCallback;
     private Runnable shiftLockChangedCallback;
 
-    private static IntConsumer createSoundChip() {
+    private static SoundChip createSoundChip() {
         try {
             return new MultiSoundChip();
         } catch (Exception ex) {
@@ -51,6 +52,14 @@ public class SystemVIA extends VIA {
             final int size
     ) {
         super(systemStatus, name, startAddress, size);
+    }
+
+    @Override
+    public void setPaused(boolean paused) {
+        super.setPaused(paused);
+        if (soundChip != null) {
+            soundChip.setPaused(paused);
+        }
     }
 
     public final int getScreenStartAddress() {

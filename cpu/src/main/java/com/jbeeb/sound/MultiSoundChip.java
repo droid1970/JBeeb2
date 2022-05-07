@@ -1,8 +1,6 @@
 package com.jbeeb.sound;
 
-import java.util.function.IntConsumer;
-
-public final class MultiSoundChip implements IntConsumer  {
+public final class MultiSoundChip implements SoundChip {
 
     private int[] register = new int[4];
     private int latchedRegister;
@@ -53,6 +51,11 @@ public final class MultiSoundChip implements IntConsumer  {
                 soundChannel.setPeriod(3, register[2] / 2);
             }
         }
+    }
+
+    @Override
+    public void setPaused(boolean paused) {
+        soundChannel.setPaused(paused);
     }
 
     private static double freq(final int freq) {
