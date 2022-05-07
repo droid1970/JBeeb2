@@ -56,6 +56,10 @@ public final class Clock {
         return cycleCount;
     }
 
+    public boolean isPaused() {
+        return paused;
+    }
+
     public void setPaused(final boolean paused) {
         for (ClockListener l : listeners) {
             l.setPaused(paused);

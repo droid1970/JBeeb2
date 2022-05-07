@@ -9,16 +9,12 @@ import com.jbeeb.sound.SoundChip;
 import com.jbeeb.util.StateKey;
 import com.jbeeb.util.SystemStatus;
 
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
-import java.util.function.IntConsumer;
 
 @StateKey(key = "systemVIA")
 public class SystemVIA extends VIA {
 
     private final KeyMap keyMap = KeyMap.DEFAULT_KEY_MAP;
-    private final Set<ColRow> downKeys = new HashSet<>();
     private final boolean[][] keyDown = new boolean[16][16];
     private final Boolean[][] keyDownShift = new Boolean[16][16];
     private ColRow lastKeyDown = null;

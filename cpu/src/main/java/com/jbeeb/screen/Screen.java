@@ -64,6 +64,9 @@ public final class Screen implements ClockListener {
 
     private final ImageComponent imageComponent;
 
+    private Timer pausedTimer;
+    private volatile boolean paused;
+
     public Screen(
             final SystemStatus systemStatus,
             final BBCMicro bbc,
@@ -153,6 +156,27 @@ public final class Screen implements ClockListener {
         frame.setLocationRelativeTo(null);
         imageComponent.setFocusable(true);
         SwingUtilities.invokeLater(imageComponent::requestFocus);
+    }
+
+    @Override
+    public void setPaused(boolean paused) {
+        this.paused = paused;
+        if (paused) {
+            cancelPausedTimer();
+            pausedTimer = new Timer(250, e -> {
+                imageComponent.repaint();
+            });
+            pausedTimer.start();
+        } else {
+            cancelPausedTimer();
+        }
+    }
+
+    private void cancelPausedTimer() {
+        if (pausedTimer != null) {
+            pausedTimer.stop();
+            pausedTimer = null;
+        }
     }
 
     private final class StatusBar extends JComponent {
@@ -363,6 +387,7 @@ public final class Screen implements ClockListener {
                 disableCursorTimer = null;
             }
         }
+
         void startDisableCursorTimer(final int delay) {
             stopDisableCursorTimer();
             disableCursorTimer = new Timer(delay, e -> {
@@ -399,7 +424,7 @@ public final class Screen implements ClockListener {
                 swapImages();
             }
 
-            if (renderer.isImageReady()) {
+            if (paused || renderer.isImageReady()) {
                 final BufferedImage image = getImageToShow();
                 final int iw = image.getWidth() + IMAGE_BORDER_SIZE * 2;
                 final int ih = image.getHeight() + IMAGE_BORDER_SIZE * 2;
