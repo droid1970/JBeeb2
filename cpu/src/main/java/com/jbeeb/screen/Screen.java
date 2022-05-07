@@ -227,8 +227,8 @@ public final class Screen implements ClockListener {
             speedCombo.addActionListener(e -> {
                 bbc.getClock().setClockSpeed(speedCombo.getItemAt(speedCombo.getSelectedIndex()));
             });
-            add(Box.createRigidArea(new Dimension(4,0)));
-            add(speedCombo);
+//            add(Box.createRigidArea(new Dimension(4,0)));
+//            add(speedCombo);
 
             add(Box.createGlue());
 
@@ -260,6 +260,8 @@ public final class Screen implements ClockListener {
             add(capsLockLabel);
 
             screenLabel = createLabel();
+//            add(Box.createRigidArea(new Dimension(8,0)));
+//            add(screenLabel);
 
             final Dimension currentPreferredSize = getPreferredSize();
             setPreferredSize(new Dimension(currentPreferredSize.width, currentPreferredSize.height - 6));
@@ -297,7 +299,7 @@ public final class Screen implements ClockListener {
             }
             clockLabel.setText(mhzString + " Mhz");
             final String displayRefreshString = systemStatus.getString(SystemStatus.KEY_AVG_DISPLAY_REFRESH_TIME_MILLIS, "?");
-            screenLabel.setText("display (ms) = " + displayRefreshString);
+            screenLabel.setText("vsync = " + Util.formatDouble(systemStatus.getDouble(SystemStatus.KEY_VSYNCS_PER_SECOND, 0.0)));
         }
 
         @Override

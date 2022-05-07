@@ -249,6 +249,10 @@ public final class Util {
         return DURATION_FORMAT.format(secs);
     }
 
+    public static String formatDouble(final double d) {
+        return DURATION_FORMAT.format(d);
+    }
+
     private static void getStateFields(final List<Field> fields, final Class<?> cl) throws Exception {
         if (cl == Object.class) {
             return;

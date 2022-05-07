@@ -35,6 +35,9 @@ public class Crtc6845 extends AbstractMemoryMappedDevice implements InterruptSou
     private long lastVSync = -VERTICAL_SYNC_2MHZ_CYCLES;
     private long lastCursorBlink = 0L;
 
+    private long firstVSyncTime = -1L;
+    private int vsyncCount;
+
     public Crtc6845(
             final SystemStatus systemStatus,
             final String name,
@@ -82,6 +85,16 @@ public class Crtc6845 extends AbstractMemoryMappedDevice implements InterruptSou
     }
 
     private void verticalSync() {
+        if (firstVSyncTime < 0L) {
+            firstVSyncTime = System.nanoTime();
+        }
+        vsyncCount++;
+        if (vsyncCount == 40) { // Update status every couple of seconds
+            final double secs = (System.nanoTime() - firstVSyncTime) / 1_000_000_000.0;
+            getSystemStatus().putDouble(SystemStatus.KEY_VSYNCS_PER_SECOND, vsyncCount / secs);
+            firstVSyncTime = System.nanoTime();
+            vsyncCount = 0;
+        }
         vsyncListeners.forEach(Runnable::run);
     }
 
