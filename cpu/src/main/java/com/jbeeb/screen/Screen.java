@@ -139,8 +139,14 @@ public final class Screen implements ClockListener {
     }
 
     private void createAndShowUI() {
-        final var frame = new JFrame("JavaBeeb");
 
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        final var frame = new JFrame("JavaBeeb");
+        //frame.setUndecorated(true);
         frame.getContentPane().setBackground(systemPalette.getColour(0));
         frame.getContentPane().add(BorderLayout.CENTER, imageComponent);
 
@@ -152,8 +158,13 @@ public final class Screen implements ClockListener {
 
         frame.pack();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setVisible(true);
+
+        final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        //frame.setSize(screenSize);
         frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+
+        //frame.setLocation(0, 0);
         imageComponent.setFocusable(true);
         SwingUtilities.invokeLater(imageComponent::requestFocus);
     }
@@ -270,8 +281,8 @@ public final class Screen implements ClockListener {
         JButton createButton(final String text) {
             final JButton button = new JButton(text);
             button.setFocusable(false);
-            button.setForeground(Color.WHITE);
-            button.setContentAreaFilled(false);
+            button.setForeground(Color.BLACK);
+            button.setContentAreaFilled(true);
             return button;
         }
 
