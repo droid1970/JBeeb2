@@ -239,13 +239,15 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
         queue(() -> pushByte(getPCL()));
         queue(() -> {
             pushByte(Flag.RESERVED.set(Flag.BREAK.set(flags, setBreakFlag)));
-            flags = Flag.INTERRUPT.set(flags);
         });
         queue(() -> setPCL(readMemory(jumpVector)));
         queue(() -> {
             setPCH(readMemory(jumpVector + 1));
             if (clearServicingInterrupt) {
                 servicingInterrupt = false;
+            }
+            if (!nmi) {
+                flags = Flag.INTERRUPT.set(flags);
             }
             inIRQ = !nmi;
             inNMI = nmi;
@@ -341,9 +343,6 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
 
         if (verbose) {
             instructionDis = Util.formatHexWord(this.pc) + ": " + disassembler.disassemble(this.pc);
-            if (instructionDis.contains("JSR $FFF4")) {
-                int x = 1;
-            }
         }
 
         final int opcode = readFromAndIncrementPC();

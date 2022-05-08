@@ -232,14 +232,14 @@ public final class Screen implements ClockListener {
             //
             // Clock speed
             //
-            final JComboBox<ClockSpeed> speedCombo = new JComboBox<>(ClockSpeed.getStandardValues());
-            speedCombo.setPreferredSize(new Dimension(128, 18));
-            speedCombo.setMinimumSize(new Dimension(128, 18));
-            speedCombo.setMaximumSize(new Dimension(128, 18));
-            speedCombo.setSelectedItem(bbc.getClock().getClockSpeed());
-            speedCombo.addActionListener(e -> {
-                bbc.getClock().setClockSpeed(speedCombo.getItemAt(speedCombo.getSelectedIndex()));
-            });
+//            final JComboBox<ClockSpeed> speedCombo = new JComboBox<>(ClockSpeed.getStandardValues());
+//            speedCombo.setPreferredSize(new Dimension(128, 18));
+//            speedCombo.setMinimumSize(new Dimension(128, 18));
+//            speedCombo.setMaximumSize(new Dimension(128, 18));
+//            speedCombo.setSelectedItem(bbc.getClock().getClockSpeed());
+//            speedCombo.addActionListener(e -> {
+//                bbc.getClock().setClockSpeed(speedCombo.getItemAt(speedCombo.getSelectedIndex()));
+//            });
 //            add(Box.createRigidArea(new Dimension(4,0)));
 //            add(speedCombo);
 
