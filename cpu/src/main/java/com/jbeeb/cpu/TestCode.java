@@ -14,8 +14,8 @@ public enum TestCode {
     DC(cpu -> cpu.isFlagClear(Flag.DECIMAL)),
     IS(cpu -> cpu.isFlagSet(Flag.INTERRUPT)),
     IC(cpu -> cpu.isFlagClear(Flag.INTERRUPT)),
-    NS(cpu -> cpu.isFlagSet(Flag.INTERRUPT), "MI"),
-    NC(cpu -> cpu.isFlagClear(Flag.INTERRUPT), "PL"),
+    NS(cpu -> cpu.isFlagSet(Flag.NEGATIVE), "MI"),
+    NC(cpu -> cpu.isFlagClear(Flag.NEGATIVE), "PL"),
     ;
 
     private static final TestCode[] VALUES;

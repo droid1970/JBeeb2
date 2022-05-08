@@ -32,6 +32,7 @@ public final class InstructionSet {
         register(HLT, AddressMode.IMPLIED, 0x02);
         register(ERR, AddressMode.IMMEDIATE, 0x80);
         register(TST, AddressMode.IMMEDIATE, 0x82);
+        register(TRP, AddressMode.IMMEDIATE, 0x89);
 
         register(ADC, AddressMode.IMMEDIATE, 0x69);
         register(ADC, AddressMode.ZPG, 0x65);

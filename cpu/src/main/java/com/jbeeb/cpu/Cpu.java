@@ -199,7 +199,14 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
     public void test(final int code) {
         final TestCode testCode = TestCode.get(code);
         if (!testCode.test(this)) {
-            halt(01);
+            halt(1);
+        }
+    }
+
+    public void trap(final int code) {
+        final TestCode testCode = TestCode.get(code);
+        if (testCode.test(this)) {
+            halt(2);
         }
     }
 
@@ -320,6 +327,7 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
                 int x = 1;
             }
         }
+
         final int opcode = readFromAndIncrementPC();
         final InstructionKey key = instructionSet.decode(opcode);
         this.instruction = key.getInstruction();

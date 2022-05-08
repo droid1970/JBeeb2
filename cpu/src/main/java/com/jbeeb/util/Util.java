@@ -189,10 +189,31 @@ public final class Util {
         return new Cpu(new SystemStatus(), new DefaultScheduler(), memory).setVerboseCondition(null);
     }
 
+    public static Cpu createCpu(final int codeStart, final InputStream in) throws IOException {
+        return createCpu(codeStart, readLines(in).toArray(new String[]{}));
+    }
+
     public static Cpu runCpu(final int codeStart, final String... statements) {
         final Cpu cpu = createCpu(codeStart, statements);
         cpu.run();
         return cpu;
+    }
+
+    public static Cpu runCpu(final int codeStart, final InputStream in) throws IOException {
+        final Cpu cpu = createCpu(codeStart, readLines(in).toArray(new String[]{}));
+        cpu.run();
+        return cpu;
+    }
+
+    public static List<String> readLines(final InputStream in) throws IOException {
+        final List<String> ret = new ArrayList<>();
+        try (BufferedReader r = new BufferedReader(new InputStreamReader(in))) {
+            String line;
+            while ((line = r.readLine()) != null) {
+                ret.add(line);
+            }
+        }
+        return ret;
     }
 
     public static String formatHexByte(final int n) {

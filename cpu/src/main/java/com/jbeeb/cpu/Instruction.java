@@ -321,6 +321,12 @@ public enum Instruction {
         public void acceptValue(Cpu cpu, int value) {
             cpu.test(value);
         }
+    },
+    TRP(InstructionType.READ) {
+        @Override
+        public void acceptValue(Cpu cpu, int value) {
+            cpu.trap(value);
+        }
     };
 
     private final InstructionType type;

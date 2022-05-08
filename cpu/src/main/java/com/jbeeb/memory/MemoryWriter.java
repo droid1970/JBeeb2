@@ -16,6 +16,10 @@ public final class MemoryWriter {
         this.memory = Objects.requireNonNull(memory);
     }
 
+    public int getPos() {
+        return pos;
+    }
+
     public void setPos(int pos) {
         this.pos = pos;
     }

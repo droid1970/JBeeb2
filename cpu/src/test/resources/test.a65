@@ -1,0 +1,7 @@
+abc = 5
+
+lda #abc
+beq br
+HLT
+br
+err #55
