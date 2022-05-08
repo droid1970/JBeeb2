@@ -5,10 +5,7 @@ import com.jbeeb.memory.Memory;
 import com.jbeeb.memory.MemoryWriter;
 import com.jbeeb.util.Util;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 public final class Assembler {
 
@@ -79,6 +76,11 @@ public final class Assembler {
         String operand = toks[1];
         if ("A".equals(operand)) {
             return new OpAddrMode(instruction, 0, AddressMode.ACCUMULATOR);
+        }
+
+        final Optional<TestCode> optTestCode = TestCode.of(operand);
+        if (optTestCode.isPresent()) {
+            return new OpAddrMode(instruction, optTestCode.get().ordinal(), AddressMode.IMMEDIATE);
         }
 
         if (operand.startsWith("#")) {

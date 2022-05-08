@@ -25,6 +25,15 @@ public class ADCTests {
     }
 
     @Test
+    void testError() {
+        final Cpu cpu = Util.runCpu(0x1000,
+                "LDA #0",
+                "TST ZS"
+        );
+        assertThat(cpu.getHaltCode()).isZero();
+    }
+
+    @Test
     void testZeroPageX() {
         final Cpu cpu = Util.runCpu(0x1000,
                 "LDA #10",

@@ -222,7 +222,9 @@ public final class Screen implements ClockListener {
             final var verboseCheckbox = createCheckbox("verbose");
             verboseCheckbox.addActionListener(e -> {
                 verbose = !verbose;
-                bbc.getCpu().setVerboseSupplier(verbose ? () -> true : () -> false);
+                bbc.getCpu().setVerboseCondition(verbose ? () -> bbc.getCpu().getPC() < 0x8000 : () -> false);
+                bbc.getCpu().setFetchDelayMillis(verbose ? 1 : 0);
+                bbc.getCpu().setFetchDelayCondition(verbose ? cpu -> cpu.getPC() < 0x8000 : null);
             });
             add(Box.createRigidArea(new Dimension(4,0)));
             add(verboseCheckbox);

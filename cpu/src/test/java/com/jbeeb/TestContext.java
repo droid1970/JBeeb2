@@ -28,7 +28,7 @@ public final class TestContext {
         this.assembler.assemble(statements);
         this.assembler.assemble("HLT");
         this.cpu = new Cpu(new SystemStatus(), new DefaultScheduler(), memory);
-        this.cpu.setVerboseSupplier(() -> false);
+        this.cpu.setVerboseCondition(() -> false);
     }
 
     public TestContext assemble(final String... statements) {

@@ -145,7 +145,7 @@ public final class BBCMicro implements InterruptSource {
         this.cpu = new Cpu(systemStatus, scheduler, memory);
         filingSystemROM.initialise(cpu, memory);
 
-        cpu.setVerboseSupplier(() -> false);
+        cpu.setVerboseCondition(() -> false);
         if (fdc != null) {
             this.fdc.setCpu(cpu);
         }

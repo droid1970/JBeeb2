@@ -307,7 +307,19 @@ public enum Instruction {
     HLT(InstructionType.IMPLIED) {
         @Override
         public void performImpliedAction(Cpu cpu) {
-            cpu.halt();
+            cpu.halt(0);
+        }
+    },
+    ERR(InstructionType.READ) {
+        @Override
+        public void acceptValue(Cpu cpu, int value) {
+            cpu.halt(value);
+        }
+    },
+    TST(InstructionType.READ) {
+        @Override
+        public void acceptValue(Cpu cpu, int value) {
+            cpu.test(value);
         }
     };
 

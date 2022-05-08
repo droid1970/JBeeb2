@@ -10,6 +10,7 @@ import com.jbeeb.memory.Memory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 
 @StateKey(key = "cpu6502")
 public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
@@ -78,7 +79,8 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
     private int ehi;
 
     private boolean halted;
-    private BooleanSupplier verboseSupplier;
+    private int haltCode;
+    private BooleanSupplier verboseCondition;
 
     private Runnable haltHook;
 
@@ -90,6 +92,9 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
     private final Scheduler scheduler;
 
     private volatile boolean paused;
+
+    private int fetchDelayMillis = 0;
+    private Predicate<Cpu> fetchDelayCondition;
 
     public Cpu(final SystemStatus systemStatus, final Scheduler scheduler, final Memory memory) {
         this.systemStatus = Objects.requireNonNull(systemStatus);
@@ -122,6 +127,7 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
         this.pc = memory.readWord(CODE_START_VECTOR);
         this.flags = Flag.INTERRUPT.set(0);
         this.halted = false;
+        this.haltCode = 0;
     }
 
     public void setInterruptSource(final InterruptSource interruptSource) {
@@ -136,6 +142,18 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
     @Override
     public String getName() {
         return "6502";
+    }
+
+    public int getHaltCode() {
+        return haltCode;
+    }
+
+    public void setFetchDelayMillis(final int fetchDelayMillis) {
+        this.fetchDelayMillis = fetchDelayMillis;
+    }
+
+    public void setFetchDelayCondition(final Predicate<Cpu> condition) {
+        this.fetchDelayCondition = condition;
     }
 
     private boolean isIRQ() {
@@ -155,8 +173,8 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
         return memory;
     }
 
-    public Cpu setVerboseSupplier(final BooleanSupplier verboseSupplier) {
-        this.verboseSupplier = (verboseSupplier == null) ? () -> false : verboseSupplier;
+    public Cpu setVerboseCondition(final BooleanSupplier verboseCondition) {
+        this.verboseCondition = (verboseCondition == null) ? () -> false : verboseCondition;
         return this;
     }
 
@@ -170,10 +188,18 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
         return this;
     }
 
-    public void halt() {
+    public void halt(final int code) {
+        this.haltCode = code & 0xFF;
         this.halted = true;
         if (haltHook != null) {
             haltHook.run();
+        }
+    }
+
+    public void test(final int code) {
+        final TestCode testCode = TestCode.get(code);
+        if (!testCode.test(this)) {
+            halt(01);
         }
     }
 
@@ -244,7 +270,6 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
 
                 // Check interrupt status
                 if (isNMI()) {
-                    Util.log("CPU: serviceNMI", 0);
                     serviceNMI();
                     return;
                 } else if (Flag.INTERRUPT.isClear(flags) && isIRQ()) {
@@ -253,13 +278,12 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
                 }
             }
 
-            if (verboseSupplier != null && verboseSupplier.getAsBoolean()) {
-                System.err.println(this);
+            if (fetchDelayMillis > 0 && (fetchDelayCondition == null || fetchDelayCondition.test(this))) {
+                Util.sleep(fetchDelayMillis);
             }
+
             fetch();
-            if (verboseSupplier != null && verboseSupplier.getAsBoolean()) {
-                System.err.println(this);
-            }
+
             cycleCount.incrementAndGet();
         } else {
             instructionDis = "";
@@ -268,7 +292,7 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
         }
 
         if (maxCycleCount > 0L && cycleCount.get() >= maxCycleCount) {
-            halt();
+            halt(0);
         }
     }
 
@@ -284,16 +308,27 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
     }
 
     private void fetch() {
-        if (pc >= 0x9002 && pc <= 0x900E) {
-            int x = 1;
-        }
+        final boolean verbose = (verboseCondition != null && verboseCondition.getAsBoolean());
+
         while (memory.processIntercepts(pc)) {
             // Do nothing
+        }
+
+        if (verbose) {
+            instructionDis = Util.formatHexWord(this.pc) + ": " + disassembler.disassemble(this.pc);
+            if (instructionDis.contains("JSR $FFF4")) {
+                int x = 1;
+            }
         }
         final int opcode = readFromAndIncrementPC();
         final InstructionKey key = instructionSet.decode(opcode);
         this.instruction = key.getInstruction();
         this.addressMode = key.getAddressMode();
+
+        if (verbose) {
+            Util.log(toString(), 0);
+        }
+
         execute();
     }
 
@@ -886,7 +921,7 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
         return y;
     }
 
-    private int getPC() {
+    public int getPC() {
         return pc;
     }
 
