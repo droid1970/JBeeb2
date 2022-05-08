@@ -20,6 +20,7 @@ public abstract class AbstractMemory implements Memory {
     private final boolean readOnly;
 
     private Map<Integer, FetchIntercept> intercepts;
+    private Map<Integer, Runnable> modifyWatches = new HashMap<>();
 
     public AbstractMemory(final int start, final int size, final boolean readOnly) {
         this(start, new int[size], readOnly);
@@ -55,6 +56,12 @@ public abstract class AbstractMemory implements Memory {
     @Override
     public void writeByte(int address, int value) {
         if (!readOnly) {
+//            if (modifyWatches.containsKey(address)) {
+//                final int orig = readByte(address);
+//                if (orig != value) {
+//                    System.err.println(Util.formatHexWord(address) + ": " + orig + " -> " + value);
+//                }
+//            }
             checkWriteable();
             Util.checkUnsignedByte(value);
             memory[computeIndex(address)] = value;
@@ -109,5 +116,9 @@ public abstract class AbstractMemory implements Memory {
         if (readOnly) {
             throw new IllegalStateException("memory is read-only");
         }
+    }
+
+    public void addModifyWatch(final int address, final Runnable runnable) {
+        modifyWatches.put(address, runnable);
     }
 }

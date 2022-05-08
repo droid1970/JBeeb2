@@ -7,7 +7,7 @@ public enum Flag {
     INTERRUPT("I"),
     DECIMAL("D"),
     BREAK("B"),
-    IGNORED("-"),
+    RESERVED("R"),
     OVERFLOW("V"),
     NEGATIVE("N");
 

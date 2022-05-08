@@ -38,7 +38,6 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
     //
     // State
     //
-
     @StateKey(key = "A")
     private int a;
 
@@ -96,12 +95,19 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
     private int fetchDelayMillis = 0;
     private Predicate<Cpu> fetchDelayCondition;
 
+    private boolean haltIfPCLoop = false;
+
     public Cpu(final SystemStatus systemStatus, final Scheduler scheduler, final Memory memory) {
         this.systemStatus = Objects.requireNonNull(systemStatus);
         this.scheduler = Objects.requireNonNull(scheduler);
         this.memory = Objects.requireNonNull(memory);
         this.disassembler = new Disassembler(instructionSet, memory);
         reset();
+    }
+
+    public void setHaltIfPCLoop(final boolean haltIfPCLoop) {
+        // For testing
+        this.haltIfPCLoop = haltIfPCLoop;
     }
 
     @Override
@@ -232,7 +238,7 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
         pushByte(getPCH()); // not queued
         queue(() -> pushByte(getPCL()));
         queue(() -> {
-            pushByte(Flag.BREAK.set(flags, setBreakFlag));
+            pushByte(Flag.RESERVED.set(Flag.BREAK.set(flags, setBreakFlag)));
             flags = Flag.INTERRUPT.set(flags);
         });
         queue(() -> setPCL(readMemory(jumpVector)));
@@ -314,7 +320,19 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
         return cycleCount.get();
     }
 
+    private int lastFetchPC;
     private void fetch() {
+
+        if (lastFetchPC == this.pc && haltIfPCLoop) {
+            this.halted = true;
+            this.haltCode = 99;
+            System.err.println("LOOP AT " + Util.formatHexWord(pc));
+            System.err.println(this);
+            return;
+        }
+
+        lastFetchPC = this.pc;
+
         final boolean verbose = (verboseCondition != null && verboseCondition.getAsBoolean());
 
         while (memory.processIntercepts(pc)) {
@@ -365,9 +383,12 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
                 queue(this::readFromAndIncrementPC);
                 queue(() -> pushByte(getPCH()));
                 queue(() -> pushByte(getPCL()));
-                queue(() -> pushByte(Flag.BREAK.set(flags)));
+                queue(() -> pushByte(Flag.RESERVED.set(Flag.BREAK.set(flags))));
                 queue(() -> setPCL(readMemory(IRQ_JUMP_VECTOR)));
-                queue(() -> setPCH(readMemory(IRQ_JUMP_VECTOR + 1)));
+                queue(() -> {
+                    setPCH(readMemory(IRQ_JUMP_VECTOR + 1));
+                    setFlag(Flag.INTERRUPT, true);
+                });
                 return;
             }
             case RTI: {
@@ -383,9 +404,6 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
                 });
                 queue(() -> {
                     setPCH(popByteNoIncrement());
-                    if (inNMI) {
-                        Util.log("CPU: RTI", 0);
-                    }
                     inIRQ = false;
                     inNMI = false;
                 });
@@ -418,7 +436,7 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
             case PHP: {
                 queue(this::readFromPC);
                 queue(() -> {
-                    pushByte(Flag.BREAK.set(flags));
+                    pushByte(Flag.RESERVED.set(Flag.BREAK.set(flags)));
                 });
                 return;
             }
