@@ -226,16 +226,25 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
 
     private void serviceNMI() {
         servicingInterrupt = true;
-        callInterruptHandler(NMI_JUMP_VECTOR, true, false, true);
+        callInterruptHandler(NMI_JUMP_VECTOR, false, true, false, true);
     }
 
     private void serviceIRQ() {
         servicingInterrupt = true;
-        callInterruptHandler(IRQ_JUMP_VECTOR, false, false, true);
+        callInterruptHandler(IRQ_JUMP_VECTOR, false, false, false, true);
     }
 
-    private void callInterruptHandler(final int jumpVector, final boolean nmi, final boolean setBreakFlag, final boolean clearServicingInterrupt) {
-        pushByte(getPCH()); // not queued
+    private void serviceBRK() {
+        queue(this::readFromAndIncrementPC); // skip next byte
+        callInterruptHandler(IRQ_JUMP_VECTOR, true, false, true, false);
+    }
+
+    private void callInterruptHandler(final int jumpVector, final boolean queueFirst, final boolean nmi, final boolean setBreakFlag, final boolean clearServicingInterrupt) {
+        if (queueFirst) {
+            queue(() -> pushByte(getPCH())); // not queued
+        } else {
+            pushByte(getPCH());
+        }
         queue(() -> pushByte(getPCL()));
         queue(() -> {
             pushByte(Flag.RESERVED.set(Flag.BREAK.set(flags, setBreakFlag)));
@@ -378,16 +387,7 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
 
         switch (instruction) {
             case BRK: {
-                // Ignore next instruction
-                queue(this::readFromAndIncrementPC);
-                queue(() -> pushByte(getPCH()));
-                queue(() -> pushByte(getPCL()));
-                queue(() -> pushByte(Flag.RESERVED.set(Flag.BREAK.set(flags))));
-                queue(() -> setPCL(readMemory(IRQ_JUMP_VECTOR)));
-                queue(() -> {
-                    setPCH(readMemory(IRQ_JUMP_VECTOR + 1));
-                    setFlag(Flag.INTERRUPT, true);
-                });
+                serviceBRK();
                 return;
             }
             case RTI: {
