@@ -1,8 +1,11 @@
 package com.jbeeb.sound;
 
+//
+// Partially based on  https://github.com/mattgodbolt/jsbeeb/blob/main/soundchip.js
+//
 public final class MultiSoundChip implements SoundChip {
 
-    private int[] register = new int[4];
+    private final int[] register = new int[4];
     private int latchedRegister;
 
     private final NoiseGenerator noiseGenerator = new NoiseGenerator();

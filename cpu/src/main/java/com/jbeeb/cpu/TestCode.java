@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.function.Predicate;
 
 public enum TestCode {
+
     CS(cpu -> cpu.isFlagSet(Flag.CARRY)),
     CC(cpu -> cpu.isFlagClear(Flag.CARRY)),
     ZS(cpu -> cpu.isFlagSet(Flag.ZERO), "EQ"),

@@ -1,5 +1,5 @@
 package com.jbeeb.util;
-;
+
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 

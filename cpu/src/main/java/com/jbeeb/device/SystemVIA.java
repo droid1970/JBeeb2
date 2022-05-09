@@ -11,6 +11,10 @@ import com.jbeeb.util.SystemStatus;
 
 import java.util.Objects;
 
+//
+// Mostly based on  https://github.com/mattgodbolt/jsbeeb/via.js
+//
+
 @StateKey(key = "systemVIA")
 public class SystemVIA extends VIA {
 

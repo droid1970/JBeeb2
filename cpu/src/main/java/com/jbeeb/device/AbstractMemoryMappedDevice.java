@@ -10,7 +10,6 @@ public abstract class AbstractMemoryMappedDevice implements MemoryMappedDevice {
 
     private final SystemStatus systemStatus;
 
-    private final String id;
     private final String name;
 
     private final int startAddress;
@@ -20,7 +19,6 @@ public abstract class AbstractMemoryMappedDevice implements MemoryMappedDevice {
 
     public AbstractMemoryMappedDevice(final SystemStatus systemStatus, final String name, final int startAddress, final int size) {
         this.systemStatus = Objects.requireNonNull(systemStatus);
-        this.id = UUID.randomUUID().toString();
         this.name = Objects.requireNonNull(name);
         this.startAddress = startAddress;
         this.endAddress = startAddress + size - 1;
@@ -28,11 +26,6 @@ public abstract class AbstractMemoryMappedDevice implements MemoryMappedDevice {
 
     public SystemStatus getSystemStatus() {
         return systemStatus;
-    }
-
-    @Override
-    public String getId() {
-        return id;
     }
 
     @Override

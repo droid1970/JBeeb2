@@ -14,17 +14,6 @@ public final class InstructionSet {
     private final InstructionKey[] codeToInstruction = new InstructionKey[256];
     private final Map<Instruction, Set<AddressMode>> instructionSupportedAddressModes = new EnumMap<>(Instruction.class);
     private final Map<AddressMode, Set<Instruction>> addressModeToInstructions = new EnumMap<>(AddressMode.class);
-//
-//    private static final Map<Integer, >
-//    public static final int TEST_CC = 0;
-//    public static final int TEST_CS = 1;
-//    public static final int TEST_ZC = 2;
-//    public static final int TEST_ZS = 3;
-//    public static final int TEST_DC = 4;
-//    public static final int TEST_DS = 5;
-//    public static final int TEST_VC = 6;
-//    public static final int TEST_VS = 7;
-//
 
     public InstructionSet() {
 

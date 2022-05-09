@@ -1,6 +1,7 @@
 package com.jbeeb.sound;
 
 public interface WaveGenerator {
+
     double next();
 
     void setPeriod(long period);

@@ -26,7 +26,7 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
     private final Memory memory;
 
     private final SystemStatus systemStatus;
-    private final String id = UUID.randomUUID().toString();
+    private final Scheduler scheduler;
     private final InstructionSet instructionSet = new InstructionSet();
     private final AtomicLong cycleCount = new AtomicLong();
     private final OpQueue queue = new OpQueue();
@@ -76,6 +76,7 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
     private int hi;
     private int elo;
     private int ehi;
+    private int interruptVector;
 
     private boolean halted;
     private int haltCode;
@@ -85,19 +86,12 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
 
     private long maxCycleCount = -1L;
 
-    private boolean irq;
-    private boolean nmi;
-
-    private final Scheduler scheduler;
-
     private volatile boolean paused;
 
     private int fetchDelayMillis = 0;
     private Predicate<Cpu> fetchDelayCondition;
 
     private boolean haltIfPCLoop = false;
-
-    private int interruptVector;
 
     public Cpu(final SystemStatus systemStatus, final Scheduler scheduler, final Memory memory) {
         this.systemStatus = Objects.requireNonNull(systemStatus);
@@ -140,11 +134,6 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
 
     public void setInterruptSource(final InterruptSource interruptSource) {
         this.interruptSource = interruptSource;
-    }
-
-    @Override
-    public String getId() {
-        return id;
     }
 
     @Override
