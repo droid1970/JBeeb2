@@ -25,7 +25,7 @@ public class ADC extends AbstractMemoryMappedDevice {
     }
 
     private void onComplete() {
-        int val = 0x0;
+        int val = 0x8000;
         this.status = (this.status & 0x0f) | 0x40 | ((val >>> 10) & 0x03);
         this.low = val & 0xff;
         this.high = (val >>> 8) & 0xff;
