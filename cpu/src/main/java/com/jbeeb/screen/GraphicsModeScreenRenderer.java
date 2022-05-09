@@ -62,7 +62,7 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
     }
 
     @Override
-    public void vsync() {
+    public void newFrame() {
 
         startAddress = crtc6845.getScreenStartAddress() * 8;
         baseAddress = systemVIA.getScreenStartAddress();

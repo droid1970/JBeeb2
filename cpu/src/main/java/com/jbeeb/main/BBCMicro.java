@@ -150,7 +150,7 @@ public final class BBCMicro implements InterruptSource {
         );
         screen.addKeyDownListener(systemVIA::keyDown);
         screen.addKeyUpListener(systemVIA::keyUp);
-        crtc6845.addVSyncListener(screen::verticalSync);
+        crtc6845.addNewFrameListener(screen::newFrame);
 
         this.cpu = new Cpu(systemStatus, scheduler, memory);
         filingSystemROM.initialise(cpu, memory);

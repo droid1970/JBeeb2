@@ -31,6 +31,8 @@ import java.util.function.IntConsumer;
 
 public final class Screen implements ClockListener {
 
+    private static final boolean DOUBLE_BUFFERED = true;
+
     private static final int IMAGE_BORDER_SIZE = 32;
     private static final int IMAGE_WIDTH = 640;
     private static final int IMAGE_HEIGHT = 512;
@@ -57,7 +59,7 @@ public final class Screen implements ClockListener {
     private final TeletextScreenRenderer teletextRenderer;
 
     private final BufferedImage image0 = new BufferedImage(IMAGE_WIDTH, IMAGE_HEIGHT, BufferedImage.TYPE_INT_RGB);
-    private final BufferedImage image1 = new BufferedImage(IMAGE_WIDTH, IMAGE_HEIGHT, BufferedImage.TYPE_INT_RGB);
+    private final BufferedImage image1 = DOUBLE_BUFFERED ? new BufferedImage(IMAGE_WIDTH, IMAGE_HEIGHT, BufferedImage.TYPE_INT_RGB) : null;
 
     private long cycleCount = 0L;
     private long totalRefreshTimeNanos = 0L;
@@ -90,11 +92,11 @@ public final class Screen implements ClockListener {
     private SystemPalette systemPalette = SystemPalette.DEFAULT;
 
     private BufferedImage getImageToPaint() {
-        return (imageIndex & 1) == 0 ? image0 : image1;
+        return !DOUBLE_BUFFERED || (imageIndex & 1) == 0 ? image0 : image1;
     }
 
     private BufferedImage getImageToShow() {
-        return (imageIndex & 1) != 0 ? image0 : image1;
+        return !DOUBLE_BUFFERED || (imageIndex & 1) != 0 ? image0 : image1;
     }
 
     @Override
@@ -122,7 +124,7 @@ public final class Screen implements ClockListener {
         keyDownListeners.add(l);
     }
 
-    public void verticalSync() {
+    public void newFrame() {
         if (videoULA.isTeletext()) {
             renderer = teletextRenderer;
         } else {
@@ -132,7 +134,7 @@ public final class Screen implements ClockListener {
         if (renderer != null && renderer.isClockBased()) {
             final BufferedImage image = getImageToPaint();
             Util.fillRect(image.getWritableTile(0, 0).getDataBuffer(), systemPalette.getColour(0).getRGB(), 0, 0, image.getWidth(), image.getHeight(), image.getWidth());
-            renderer.vsync();
+            renderer.newFrame();
         } else {
             SwingUtilities.invokeLater(imageComponent::repaint);
         }
@@ -243,6 +245,12 @@ public final class Screen implements ClockListener {
 //            add(Box.createRigidArea(new Dimension(4,0)));
 //            add(speedCombo);
 
+            final JCheckBox keyMapCheckbox = createCheckbox("gamemap");
+            keyMapCheckbox.setSelected(false);
+            keyMapCheckbox.addActionListener(e -> {
+                systemVIA.swapKeyMap();
+            });
+            add(keyMapCheckbox);
             add(Box.createGlue());
 
             //

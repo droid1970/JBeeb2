@@ -20,8 +20,7 @@ public class Crtc6845 extends AbstractMemoryMappedDevice implements InterruptSou
     private static final int SLOW_CURSOR_VSYNCS = 16;
 
     private final SystemVIA systemVIA;
-    private final List<Runnable> vsyncListeners = new ArrayList<>();
-    private final List<Runnable> startOfVSyncListeners = new ArrayList<>();
+    private final List<Runnable> newFrameListeners = new ArrayList<>();
 
     @StateKey(key = "v0")
     private int v0;
@@ -32,11 +31,14 @@ public class Crtc6845 extends AbstractMemoryMappedDevice implements InterruptSou
     private boolean cursorOn;
     private long inputCycleCount = 0L;
     private long myCycleCount = 0L;
-    private long lastVSync = -VERTICAL_SYNC_2MHZ_CYCLES;
+    private long lastEndOfFrame = 0l;
     private long lastCursorBlink = 0L;
 
-    private long firstVSyncTime = -1L;
-    private int vsyncCount;
+    private long firstFrameTime = -1L;
+    private int frameCount;
+    private boolean firedNewFrame = false;
+    private boolean firedSyncOn = false;
+    private boolean firedSyncOff = false;
 
     public Crtc6845(
             final SystemStatus systemStatus,
@@ -58,13 +60,28 @@ public class Crtc6845 extends AbstractMemoryMappedDevice implements InterruptSou
 
     @Override
     public void tick(final ClockSpeed clockSpeed, final long elapsedNanos) {
-        final long cyclesSinceLastVSync = myCycleCount - lastVSync;
-        if ((cyclesSinceLastVSync >= VERTICAL_SYNC_2MHZ_CYCLES)) {
+        final int cyclesPerRow = VERTICAL_SYNC_2MHZ_CYCLES / getVerticalTotalChars();
+        final int cyclesPerScanline = VERTICAL_SYNC_2MHZ_CYCLES / (getVerticalTotalChars() * 8);
+        final int syncPulseOnCycles = getVerticalSyncPosition() * cyclesPerRow;
+        final int syncPulseOffCycles = syncPulseOnCycles + getVerticalSyncPulseWidth() * cyclesPerRow;//cyclesPerScanline;
+        final long cyclesSinceLastNewFrame = myCycleCount - lastEndOfFrame;
+
+        if (!firedNewFrame) {
+            // New frame (start rendering)
+            newFrame();
+            firedNewFrame = true;
+        }
+
+        if (!firedSyncOn && cyclesSinceLastNewFrame >= syncPulseOnCycles) {
+            // Fire vsync interrupt
             systemVIA.setCA1(true);
-            verticalSync();
-            lastVSync = myCycleCount;
-        } else if (cyclesSinceLastVSync > 500) {
+            firedSyncOn = true;
+        }
+
+        if (!firedSyncOff && cyclesSinceLastNewFrame >= syncPulseOffCycles) {
+            // Stop vsync interrupt
             systemVIA.setCA1(false);
+            firedSyncOff = true;
         }
 
         final long cursorToggleCycles = VERTICAL_SYNC_2MHZ_CYCLES * ((isCursorFastBlink()) ? FAST_CURSOR_VSYNCS : SLOW_CURSOR_VSYNCS);
@@ -73,33 +90,34 @@ public class Crtc6845 extends AbstractMemoryMappedDevice implements InterruptSou
             cursorOn = !cursorOn;
             lastCursorBlink = myCycleCount;
         }
+
+        if ((cyclesSinceLastNewFrame >= VERTICAL_SYNC_2MHZ_CYCLES)) {
+            lastEndOfFrame = myCycleCount;
+            firedNewFrame = false;
+            firedSyncOn = false;
+            firedSyncOff = false;
+        }
+
         myCycleCount += clockSpeed.computeElapsedCycles(CLOCK_RATE, inputCycleCount, myCycleCount, elapsedNanos);
         inputCycleCount++;
     }
 
-    public void addVSyncListener(final Runnable l) {
-        vsyncListeners.add(Objects.requireNonNull(l));
-    }
-    public void addStartOfVSyncListener(final Runnable l) {
-        startOfVSyncListeners.add(l);
+    public void addNewFrameListener(final Runnable l) {
+        newFrameListeners.add(Objects.requireNonNull(l));
     }
 
-    private void verticalSync() {
-        if (firstVSyncTime < 0L) {
-            firstVSyncTime = System.nanoTime();
+    private void newFrame() {
+        if (firstFrameTime < 0L) {
+            firstFrameTime = System.nanoTime();
         }
-        vsyncCount++;
-        if (vsyncCount == 40) { // Update status every couple of seconds
-            final double secs = (System.nanoTime() - firstVSyncTime) / 1_000_000_000.0;
-            getSystemStatus().putDouble(SystemStatus.KEY_VSYNCS_PER_SECOND, vsyncCount / secs);
-            firstVSyncTime = System.nanoTime();
-            vsyncCount = 0;
+        frameCount++;
+        if (frameCount == 40) { // Update status every couple of seconds
+            final double secs = (System.nanoTime() - firstFrameTime) / 1_000_000_000.0;
+            getSystemStatus().putDouble(SystemStatus.KEY_VSYNCS_PER_SECOND, frameCount / secs);
+            firstFrameTime = System.nanoTime();
+            frameCount = 0;
         }
-        vsyncListeners.forEach(Runnable::run);
-    }
-
-    private void startOfVerticalSync() {
-        startOfVSyncListeners.forEach(Runnable::run);
+        newFrameListeners.forEach(Runnable::run);
     }
 
     @Override
@@ -130,6 +148,10 @@ public class Crtc6845 extends AbstractMemoryMappedDevice implements InterruptSou
 
     public int getHorizontalSyncPosition() {
         return registers[2];
+    }
+
+    public int getVerticalSyncPulseWidth() {
+        return (registers[3] & 0xF0) >>> 4;
     }
 
     public int getVerticalTotalChars() {

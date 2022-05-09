@@ -18,7 +18,7 @@ import java.util.Objects;
 @StateKey(key = "systemVIA")
 public class SystemVIA extends VIA {
 
-    private final KeyMap keyMap = KeyMap.DEFAULT;
+    private KeyMap keyMap = KeyMap.DEFAULT;
 
     private final boolean[][] keyDown = new boolean[16][16];
     private final Boolean[][] keyDownShift = new Boolean[16][16];
@@ -61,6 +61,10 @@ public class SystemVIA extends VIA {
         if (soundChip != null) {
             soundChip.setPaused(paused);
         }
+    }
+
+    public void swapKeyMap() {
+        this.keyMap = (keyMap == KeyMap.DEFAULT) ? KeyMap.PHYSICAL_KEY_MAP : KeyMap.DEFAULT;
     }
 
     public final int getScreenStartAddress() {

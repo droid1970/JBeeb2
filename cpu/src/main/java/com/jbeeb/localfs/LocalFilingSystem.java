@@ -367,7 +367,6 @@ public class LocalFilingSystem extends FilingSystem {
 
             case 3: {
                 // Unrecognised command
-
                 final String commandLine = CpuUtil.readStringAbsolute(memory, (cpu.getX() & 0xFF) | ((cpu.getY() & 0xFF) << 8));
                 final String[] args = toArgs(commandLine);
                 final String command = args[0].toUpperCase();

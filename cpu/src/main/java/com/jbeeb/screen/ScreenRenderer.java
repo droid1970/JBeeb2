@@ -8,7 +8,7 @@ public interface ScreenRenderer {
 
     boolean isClockBased();
     void tick(BufferedImage image, ClockSpeed clockSpeed, long elapsedNanos);
-    void vsync();
+    void newFrame();
 
     void refreshWholeImage(BufferedImage image);
     boolean isImageReady();
