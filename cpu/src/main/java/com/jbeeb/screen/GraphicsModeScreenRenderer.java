@@ -80,15 +80,14 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
 
         pixelsPerChar = videoULA.getPixelsPerCharacter();
         pixelsPerLine = horizontalDisplayedChars * pixelsPerChar;
-        bitsPerPixel = videoULA.getCursorWidth();
+        bitsPerPixel = videoULA.getBitsPerPixel();
         fastClock = videoULA.isFastClockRate();
-
         pixelWidth = bitsPerPixel * (fastClock ? 1 : 2);
+
         pixelHeight = 2;
 
         myCyclesSinceSync = 0L;
         charPos = 0;
-        //System.err.println("scanline at sync = " + scanLine);
         scanLine = 0;
         cursorRect = null;
     }
@@ -114,6 +113,7 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
                     try {
                         paintNextCharacter(image);
                     } catch (Exception ex) {
+                        ex.printStackTrace();
                         // Deliberately ignored
                     }
                 }
@@ -127,7 +127,16 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
         return scanLine >= scanLineCount;
     }
 
+    private int lastPixelsPerChar;
+
     private void paintNextCharacter(final BufferedImage img) {
+
+        // TODO: Only fetch these on a material change in Videa ULA
+        pixelsPerChar = videoULA.getPixelsPerCharacter();
+        pixelsPerLine = horizontalDisplayedChars * pixelsPerChar;
+        bitsPerPixel = videoULA.getBitsPerPixel();
+        fastClock = videoULA.isFastClockRate();
+        pixelWidth = bitsPerPixel * (fastClock ? 1 : 2);
 
         final DataBuffer dataBuffer = img.getWritableTile(0, 0).getDataBuffer();
         final int imageWidth = img.getWidth();
@@ -150,7 +159,7 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
         int px = x;
         int py = computeCharY(scanLine, scanLinesPerChar, pixelHeight);
         for (int b = 0; b < pixelsPerChar; b++) {
-            final int rgb = videoULA.getPhysicalColor(v, b).getRGB() & 0xFFFFFF;
+            final int rgb = videoULA.getPhysicalColor(v, b, bitsPerPixel).getRGB() & 0xFFFFFF;
             Util.fillRect(dataBuffer, rgb, px, py, pixelWidth, pixelHeight, imageWidth);
             px += pixelWidth;
         }

@@ -102,8 +102,23 @@ public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSou
         }
     }
 
+    public int getBitsPerPixel() {
+        final int charsPerLine = getCharactersPerLine();
+        switch (charsPerLine) {
+            default:
+            case 80:
+                return 1;
+            case 40:
+                return isFastClockRate() ? 2 : 1;
+            case 20:
+                return isFastClockRate() ? 4 : 2;
+            case 10:
+                return isFastClockRate() ? 4 : 2;
+        }
+    }
+
     public int getPixelsPerCharacter() {
-        return 8 / getCursorWidth();
+        return 8 / getBitsPerPixel();
     }
 
     public boolean isFastClockRate() {
@@ -138,6 +153,7 @@ public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSou
         index = index & 1;
         if (index == 0) {
             this.videoControlRegister = (value & 0xFF);
+            //System.err.println("vcr = " + videoControlRegister + " bpp = " + getBitsPerPixel() + " cpl = " + getCharactersPerLine() + " fast = " + isFastClockRate());
         } else if (index == 1) {
             final int logicalIndex = (value >>> 4) & 0x0F;
             final int actualColour = (value & 0x0F);
@@ -145,12 +161,8 @@ public class VideoULA extends AbstractMemoryMappedDevice implements InterruptSou
         }
     }
 
-    public Color getPhysicalColor(int v, int b) {
-        final int bitsPerPixel = getCursorWidth();
+    public Color getPhysicalColor(int v, int b, final int bitsPerPixel) {
         final int logicalColorIndex = getLogicalColour(v, b, bitsPerPixel);
-        if (logicalColorIndex > 0) {
-            int x = 1;
-        }
         int paletteIndex = logicalColorIndex;
         switch (bitsPerPixel) {
             case 1:

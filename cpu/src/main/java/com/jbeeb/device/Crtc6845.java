@@ -63,7 +63,7 @@ public class Crtc6845 extends AbstractMemoryMappedDevice implements InterruptSou
         final int cyclesPerRow = VERTICAL_SYNC_2MHZ_CYCLES / getVerticalTotalChars();
         final int cyclesPerScanline = VERTICAL_SYNC_2MHZ_CYCLES / (getVerticalTotalChars() * 8);
         final int syncPulseOnCycles = getVerticalSyncPosition() * cyclesPerRow;
-        final int syncPulseOffCycles = syncPulseOnCycles + getVerticalSyncPulseWidth() * cyclesPerRow;//cyclesPerScanline;
+        final int syncPulseOffCycles = syncPulseOnCycles + getVerticalSyncPulseWidth() * cyclesPerScanline;
         final long cyclesSinceLastNewFrame = myCycleCount - lastEndOfFrame;
 
         if (!firedNewFrame) {
