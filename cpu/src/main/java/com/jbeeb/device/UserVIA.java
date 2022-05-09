@@ -4,7 +4,7 @@ import com.jbeeb.util.StateKey;
 import com.jbeeb.util.SystemStatus;
 
 //
-// Mostly based on  https://github.com/mattgodbolt/jsbeeb/via.js
+// Mostly based on  https://github.com/mattgodbolt/jsbeeb/via.js by Matt Godbolt
 //
 @StateKey(key = "userVIA")
 public class UserVIA extends VIA {
