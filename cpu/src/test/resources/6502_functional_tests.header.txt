@@ -1,0 +1,81 @@
+;
+; 6 5 0 2   F U N C T I O N A L   T E S T
+;
+; Copyright (C) 2012-2020  Klaus Dormann
+;
+; This program is free software: you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation, either version 3 of the License, or
+; (at your option) any later version.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+; This program is designed to test all opcodes of a 6502 emulator using all
+; addressing modes with focus on propper setting of the processor status
+; register bits.
+;
+; version 05-jan-2020
+; contact info at http://2m5.de or email K@2m5.de
+;
+; assembled with AS65 written by Frank A. Kingswood
+; The assembler as65_142.zip can be obtained from my GitHub repository
+; command line switches: -l -m -s2 -w -h0
+;                         |  |  |   |  no page headers in listing
+;                         |  |  |   wide listing (133 char/col)
+;                         |  |  write intel hex file instead of binary
+;                         |  expand macros in listing
+;                         generate pass2 listing
+;
+; No IO - should be run from a monitor with access to registers.
+; To run load intel hex image with a load command, than alter PC to 400 hex
+; (code_segment) and enter a go command.
+; Loop on program counter determines error or successful completion of test.
+; Check listing for relevant traps (jump/branch *).
+; Please note that in early tests some instructions will have to be used before
+; they are actually tested!
+;
+; RESET, NMI or IRQ should not occur and will be trapped if vectors are enabled.
+; Tests documented behavior of the original NMOS 6502 only! No unofficial
+; opcodes. Additional opcodes of newer versions of the CPU (65C02, 65816) will
+; not be tested. Decimal ops will only be tested with valid BCD operands and
+; N V Z flags will be ignored.
+;
+; Debugging hints:
+;     Most of the code is written sequentially. if you hit a trap, check the
+;   immediately preceeding code for the instruction to be tested. Results are
+;   tested first, flags are checked second by pushing them onto the stack and
+;   pulling them to the accumulator after the result was checked. The "real"
+;   flags are no longer valid for the tested instruction at this time!
+;     If the tested instruction was indexed, the relevant index (X or Y) must
+;   also be checked. Opposed to the flags, X and Y registers are still valid.
+;
+; versions:
+;   28-jul-2012  1st version distributed for testing
+;   29-jul-2012  fixed references to location 0, now #0
+;                added license - GPLv3
+;   30-jul-2012  added configuration options
+;   01-aug-2012  added trap macro to allow user to change error handling
+;   01-dec-2012  fixed trap in branch field must be a branch
+;   02-mar-2013  fixed PLA flags not tested
+;   19-jul-2013  allowed ROM vectors to be loaded when load_data_direct = 0
+;                added test sequence check to detect if tests jump their fence
+;   23-jul-2013  added RAM integrity check option
+;   16-aug-2013  added error report to standard output option
+;   13-dec-2014  added binary/decimal opcode table switch test
+;   14-dec-2014  improved relative address test
+;   23-aug-2015  added option to disable self modifying tests
+;   24-aug-2015  all self modifying immediate opcodes now execute in data RAM
+;                added small branch offset pretest
+;   21-oct-2015  added option to disable decimal mode ADC & SBC tests
+;   04-dec-2017  fixed BRK only tested with interrupts enabled
+;                added option to skip the remainder of a failing test
+;                in report.i65
+;   05-jan-2020  fixed shifts not testing zero result and flag when last 1-bit
+;                is shifted out

@@ -1,0 +1,52 @@
+;
+; 6 5 0 2   I N T E R R U P T   T E S T
+;
+; Copyright (C) 2013  Klaus Dormann
+;
+; This program is free software: you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation, either version 3 of the License, or
+; (at your option) any later version.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+; This program is designed to test IRQ and NMI of a 6502 emulator. It requires
+; an internal or external feedback register to the IRQ & NMI inputs
+;
+; version 15-aug-2014
+; contact info at http://2m5.de or email K@2m5.de
+;
+; assembled with AS65 from http://www.kingswood-consulting.co.uk/assemblers/
+; command line switches: -l -m -s2 -w -h0
+;                         |  |  |   |  no page headers in listing
+;                         |  |  |   wide listing (133 char/col)
+;                         |  |  write intel hex file instead of binary
+;                         |  expand macros in listing
+;                         generate pass2 listing
+;
+; No IO - should be run from a monitor with access to registers.
+; To run load intel hex image with a load command, than alter PC to 400 hex and
+; enter a go command.
+; Loop on program counter determines error or successful completion of test.
+; Check listing for relevant traps (jump/branch *).
+;
+; Debugging hints:
+;     Most of the code is written sequentially. if you hit a trap, check the
+;   immediately preceeding code for the instruction to be tested. Results are
+;   tested first, flags are checked second by pushing them onto the stack and
+;   pulling them to the accumulator after the result was checked. The "real"
+;   flags are no longer valid for the tested instruction at this time!
+;     If the tested instruction was indexed, the relevant index (X or Y) must
+;   also be checked. Opposed to the flags, X and Y registers are still valid.
+;
+; versions:
+;   19-jul-2013  1st version distributed for testing
+;   16-aug-2013  added error report to standard output option
+;   15-aug-2014  added filter to feedback (bit 7 will cause diag stop in emu)
