@@ -402,7 +402,18 @@ public class VIA extends AbstractMemoryMappedDevice implements ClockListener, In
                     temp &= 0x7f;
                     temp |= (t1_pb7 << 7);
                 }
+
+                // Clear joystick bits
                 temp = temp & 0xCF;
+
+                if (true) { // Joystick button 1 not pressed
+                    temp |= 1 << 4;
+                }
+
+                if (true) { // Joystick button 2 not pressed
+                    temp |= 1 << 5;
+                }
+
                 return temp;
             case DDRA:
                 return ddra;

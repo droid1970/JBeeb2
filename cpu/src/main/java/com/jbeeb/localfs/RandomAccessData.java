@@ -3,8 +3,9 @@ package com.jbeeb.localfs;
 import java.io.IOException;
 
 public interface RandomAccessData {
-    byte get() throws IOException;
+    byte read() throws IOException;
     void seek(int position) throws IOException;
     int length();
     boolean isEOF();
+    void close();
 }

@@ -2,6 +2,7 @@ package com.jbeeb.localfs;
 
 import com.jbeeb.cpu.CpuUtil;
 import com.jbeeb.memory.Memory;
+import com.jbeeb.util.Util;
 
 public final class OsFileParameters {
 
@@ -39,5 +40,15 @@ public final class OsFileParameters {
 
     public int getSaveEndAddress() {
         return saveEndAddress;
+    }
+
+    @Override
+    public String toString() {
+        return "address =  " + Util.formatHexWord(address) +
+                " fileName = " + fileName +
+                " loadAddress = " + Util.formatHexWord(loadAddress) +
+                " execAddress = " + Util.formatHexWord(execAddress) +
+                " saveStartAddress = " + Util.formatHexWord(saveStartAddress) +
+                " saveEndAddress = " + Util.formatHexWord(saveEndAddress);
     }
 }

@@ -16,7 +16,7 @@ public final class ByteRandomAccessData implements RandomAccessData {
     }
 
     @Override
-    public byte get() throws IOException {
+    public byte read() throws IOException {
         return buffer.get();
     }
 
@@ -33,5 +33,10 @@ public final class ByteRandomAccessData implements RandomAccessData {
     @Override
     public boolean isEOF() {
         return buffer.position() >= data.length;
+    }
+
+    @Override
+    public void close() {
+        // Nothing to do here
     }
 }

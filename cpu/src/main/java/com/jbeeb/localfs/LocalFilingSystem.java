@@ -2,6 +2,7 @@ package com.jbeeb.localfs;
 
 import com.jbeeb.cpu.Cpu;
 import com.jbeeb.cpu.CpuUtil;
+import com.jbeeb.cpu.Flag;
 import com.jbeeb.main.JavaBeeb;
 import com.jbeeb.memory.Memory;
 import com.jbeeb.util.Util;
@@ -33,12 +34,18 @@ public class LocalFilingSystem extends FilingSystem {
             "*UP        - move to parent directory"
     );
 
-    @FunctionalInterface
-    private interface CommandHandler {
-        void run(final String[] args);
-    }
-
     private LfsElement currentDirectory;
+
+    private final RandomAccessData[] openFiles = new RandomAccessData[256]; // Indexed by file handle
+
+    private int getFreeFileHandle(final Cpu cpu) {
+        for (int i = 1; i < openFiles.length; i++) {
+            if (openFiles[i] == null) {
+                return i;
+            }
+        }
+        return -1;
+    }
 
     public LocalFilingSystem(final String name, final String copyright) {
         super(name, copyright);
@@ -242,7 +249,7 @@ public class LocalFilingSystem extends FilingSystem {
     private void load(final Memory memory, final LfsElement file, final int loadAddress) throws IOException {
         final RandomAccessData fileData = file.getData();
         for (int i = 0; i < fileData.length(); i++) {
-            memory.writeByte(loadAddress + i, (fileData.get() & 0xFF));
+            memory.writeByte(loadAddress + i, (fileData.read() & 0xFF));
         }
     }
 
@@ -258,11 +265,34 @@ public class LocalFilingSystem extends FilingSystem {
 
     @Override
     protected void osbget(final Cpu cpu, final Memory memory) {
-        System.err.println("OSBGET");
+        final int handle = cpu.getY();
+        final RandomAccessData file = (handle >= 0 && handle <= 255) ? openFiles[handle] : null;
+        if (file == null) {
+            cpu.setA(0, true);
+            cpu.setFlag(Flag.CARRY, true);
+            CpuUtil.newlineMessage(cpu, "Bad file handle - " + handle);
+            return;
+        }
+
+        if (file.isEOF()) {
+            cpu.setA(0, true);
+            cpu.setFlag(Flag.CARRY, true);
+            return;
+        }
+
+        try {
+            cpu.setA(file.read(), true);
+            cpu.setFlag(Flag.CARRY, false);
+        } catch (Exception ex) {
+            CpuUtil.newlineMessage(cpu, "Exception - " + ex.getMessage());
+            cpu.setA(0, true);
+            cpu.setFlag(Flag.CARRY, true);
+        }
     }
 
     @Override
     protected void osbput(final Cpu cpu, final Memory memory) {
+        int x = 1;
         System.err.println("OSBPUT");
     }
 
@@ -273,7 +303,53 @@ public class LocalFilingSystem extends FilingSystem {
 
     @Override
     protected void osfind(final Cpu cpu, final Memory memory) {
-        System.err.println("OSFIND");
+        if (cpu.getA() == 0) {
+            // Close a file
+            final int handle = cpu.getY();
+            if (openFiles[handle] != null) {
+                openFiles[handle].close();
+            }
+        } else {
+            final String fileName = CpuUtil.readStringAbsolute(memory, (cpu.getX() & 0xFF) | ((cpu.getY() & 0xFF) << 8));
+            final LfsElement element = findFile(fileName);
+            if (element == null) {
+                CpuUtil.newlineMessage(cpu, "File not found - " + fileName);
+                cpu.setA(0, true);
+                return;
+            }
+            System.err.println("OSFIND: fileName = " + fileName + " action = " + cpu.getA());
+            final int handle = getFreeFileHandle(cpu);
+            if (handle < 0) {
+                CpuUtil.newlineMessage(cpu, "Too many open files");
+                cpu.setA(0, true);
+                return;
+            }
+
+            try {
+                openFiles[handle] = element.getData();
+            } catch (Exception ex) {
+                CpuUtil.newlineMessage(cpu, "Exception - " + ex.getMessage());
+                cpu.setA(0, true);
+                return;
+            }
+
+            switch (cpu.getA()) {
+                case 0x40: {
+                    cpu.setA(handle, true);
+                    break;
+                }
+                case 0x80: {
+                    // Output only
+                    cpu.setA(handle, true);
+                    break;
+                }
+                case 0xc0: {
+                    // Random access
+                    cpu.setA(handle, true);
+                    break;
+                }
+            }
+        }
     }
 
     @Override

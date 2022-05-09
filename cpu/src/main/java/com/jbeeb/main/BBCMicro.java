@@ -37,6 +37,7 @@ public final class BBCMicro implements InterruptSource {
     private final SystemVIA systemVIA;
     private final UserVIA userVIA;
     private final Crtc6845 crtc6845;
+    private final ADC adc;
     private final FloppyDiskController fdc;
     private final PagedRomSelect pagedRomSelect;
     private final RandomAccessMemory ram;
@@ -92,6 +93,14 @@ public final class BBCMicro implements InterruptSource {
         );
 
         final Scheduler scheduler = new DefaultScheduler();
+        this.adc = new ADC(
+                systemStatus,
+                "ADC",
+                SHEILA + 0xC0,
+                scheduler,
+                systemVIA
+        );
+
         this.fdc = (INSTALL_DFS) ? new FloppyDiskController(systemStatus, scheduler, "FDC8271", SHEILA + 0x80) : null;
 
         this.pagedRomSelect = new PagedRomSelect(systemStatus, "Paged ROM", SHEILA + 0x30, 1);
@@ -101,6 +110,7 @@ public final class BBCMicro implements InterruptSource {
         devices.add(systemVIA);
         devices.add(crtc6845);
         devices.add(userVIA);
+        devices.add(adc);
         if (fdc != null) {
             devices.add(fdc);
         }
