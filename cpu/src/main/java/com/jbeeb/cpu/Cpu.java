@@ -97,6 +97,8 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
 
     private boolean haltIfPCLoop = false;
 
+    private int interruptVector;
+
     public Cpu(final SystemStatus systemStatus, final Scheduler scheduler, final Memory memory) {
         this.systemStatus = Objects.requireNonNull(systemStatus);
         this.scheduler = Objects.requireNonNull(scheduler);
@@ -167,12 +169,7 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
     }
 
     private boolean isNMI() {
-        if (nmiRequested) {
-            nmiRequested = false;
-            return true;
-        } else {
-            return false;
-        }
+        return nmiRequested;
     }
 
     public Memory getMemory() {
@@ -224,42 +221,39 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
         return inNMI;
     }
 
-    private void serviceNMI() {
-        servicingInterrupt = true;
-        callInterruptHandler(NMI_JUMP_VECTOR, false, true, false, true);
-    }
-
-    private void serviceIRQ() {
-        servicingInterrupt = true;
-        callInterruptHandler(IRQ_JUMP_VECTOR, false, false, false, true);
-    }
-
     private void serviceBRK() {
-        queue(this::readFromAndIncrementPC); // skip next byte
-        callInterruptHandler(IRQ_JUMP_VECTOR, true, false, true, false);
+        if (!servicingInterrupt) {
+            serviceInterrupt(true);
+        }
     }
 
-    private void callInterruptHandler(final int jumpVector, final boolean queueFirst, final boolean nmi, final boolean setBreakFlag, final boolean clearServicingInterrupt) {
-        if (queueFirst) {
-            queue(() -> pushByte(getPCH())); // not queued
+    private void serviceInterrupt(final boolean isBRK) {
+        servicingInterrupt = true;
+        if (isBRK) {
+            queue(this::readFromAndIncrementPC); // skip next byte
+            queue(() -> pushByte(getPCH()));
         } else {
-            pushByte(getPCH());
+            queue(() -> pushByte(getPCH())); // not queued
         }
         queue(() -> pushByte(getPCL()));
         queue(() -> {
-            pushByte(Flag.RESERVED.set(Flag.BREAK.set(flags, setBreakFlag)));
+            pushByte(Flag.RESERVED.set(Flag.BREAK.set(flags, isBRK)));
         });
-        queue(() -> setPCL(readMemory(jumpVector)));
         queue(() -> {
-            setPCH(readMemory(jumpVector + 1));
-            if (clearServicingInterrupt) {
-                servicingInterrupt = false;
+            if (nmiRequested) {
+                interruptVector = NMI_JUMP_VECTOR;
+                nmiRequested = false;
+                inNMI = true;
+            } else {
+                interruptVector = IRQ_JUMP_VECTOR;
+                inIRQ = (!isBRK);
             }
-            if (!nmi) {
-                flags = Flag.INTERRUPT.set(flags);
-            }
-            inIRQ = !nmi;
-            inNMI = nmi;
+            setPCL(readMemory(interruptVector));
+        });
+        queue(() -> {
+            setPCH(readMemory(interruptVector + 1));
+            servicingInterrupt = false;
+            flags = Flag.INTERRUPT.set(flags);
         });
     }
 
@@ -269,7 +263,9 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
 
     private volatile boolean nmiRequested;
     public void requestNMI(final boolean b) {
-        nmiRequested = b;
+        if (nmiRequested != b) {
+            nmiRequested = b;
+        }
     }
 
     @Override
@@ -293,11 +289,8 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
                 }
 
                 // Check interrupt status
-                if (isNMI()) {
-                    serviceNMI();
-                    return;
-                } else if (Flag.INTERRUPT.isClear(flags) && isIRQ()) {
-                    serviceIRQ();
+                if (isNMI() || (Flag.INTERRUPT.isClear(flags) && isIRQ())) {
+                    serviceInterrupt(false);
                     return;
                 }
             }
@@ -337,8 +330,8 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
         if (lastFetchPC == this.pc && haltIfPCLoop) {
             this.halted = true;
             this.haltCode = 99;
-            System.err.println("LOOP AT " + Util.formatHexWord(pc));
-            System.err.println(this);
+            System.out.println("LOOP AT " + Util.formatHexWord(pc));
+            System.out.println(this);
             return;
         }
 

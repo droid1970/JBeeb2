@@ -4,9 +4,8 @@ import com.jbeeb.cpu.InstructionSet;
 import com.jbeeb.util.StateKey;
 import com.jbeeb.util.Util;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.function.IntConsumer;
 
 public abstract class AbstractMemory implements Memory {
 
@@ -20,7 +19,7 @@ public abstract class AbstractMemory implements Memory {
     private final boolean readOnly;
 
     private Map<Integer, FetchIntercept> intercepts;
-    private Map<Integer, Runnable> modifyWatches = new HashMap<>();
+    private Map<Integer, IntConsumer> modifyWatches = null;
 
     public AbstractMemory(final int start, final int size, final boolean readOnly) {
         this(start, new int[size], readOnly);
@@ -56,12 +55,13 @@ public abstract class AbstractMemory implements Memory {
     @Override
     public void writeByte(int address, int value) {
         if (!readOnly) {
-//            if (modifyWatches.containsKey(address)) {
-//                final int orig = readByte(address);
-//                if (orig != value) {
-//                    System.err.println(Util.formatHexWord(address) + ": " + orig + " -> " + value);
-//                }
-//            }
+            if (modifyWatches != null && modifyWatches.containsKey(address)) {
+                final int oldValue = readByte(address);
+                if (oldValue != value) {
+                    System.out.println(Util.formatHexWord(address) + ": " + oldValue + " -> " + value);
+                    modifyWatches.get(address).accept(value);
+                }
+            }
             checkWriteable();
             Util.checkUnsignedByte(value);
             memory[computeIndex(address)] = value;
@@ -118,7 +118,10 @@ public abstract class AbstractMemory implements Memory {
         }
     }
 
-    public void addModifyWatch(final int address, final Runnable runnable) {
-        modifyWatches.put(address, runnable);
+    public void addModifyWatch(final int address, final IntConsumer valueConsumer) {
+        if (modifyWatches == null) {
+            modifyWatches = new HashMap<>();
+        }
+        modifyWatches.put(address, valueConsumer);
     }
 }
