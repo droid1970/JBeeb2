@@ -5,7 +5,6 @@ import com.jbeeb.memory.AbstractMemory;
 import com.jbeeb.memory.MemoryUtils;
 import com.jbeeb.memory.RandomAccessMemory;
 import com.jbeeb.util.DefaultScheduler;
-import com.jbeeb.util.InterruptSource;
 import com.jbeeb.util.SystemStatus;
 import org.junit.jupiter.api.Test;
 
