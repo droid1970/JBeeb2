@@ -1,6 +1,7 @@
 package com.jbeeb.clock;
 
 import com.jbeeb.util.SystemStatus;
+import com.jbeeb.util.Util;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -54,17 +55,36 @@ public final class Clock {
         return cycleCount;
     }
 
+    private long pausedTime = 0L;
+
+    private volatile boolean paused;
+
     public void setPaused(final boolean paused) {
         for (ClockListener l : listeners) {
             l.setPaused(paused);
         }
+
+        if (paused) {
+            this.paused = true;
+        } else {
+            this.paused = false;
+        }
     }
 
     public void run(final BooleanSupplier stopCondition) {
-        final long firstStartTime = System.nanoTime();
-        long startTime = firstStartTime;
-        this.nextTickTime = startTime + delayNanos;
+        long firstStartTime = System.nanoTime();
+        long resetTime = firstStartTime;
+        this.nextTickTime = resetTime + delayNanos;
         while (!stopCondition.getAsBoolean()) {
+            if (paused) {
+                while (paused) {
+                    final long t = System.nanoTime();
+                    Util.sleep(100);
+                    firstStartTime += System.nanoTime() - t;
+                }
+                resetTime = resetDelay(resetTime, false);
+            }
+
             final long nanoTime = awaitNextCycle();
 
             // Send tick to all the listeners
@@ -78,17 +98,12 @@ public final class Clock {
                 return;
             }
             if ((cycleCountSinceReset & ADJUST_MASK) == 0) {
-                adjustDelay(System.nanoTime() - startTime);
+                adjustDelay(System.nanoTime() - resetTime);
             }
 
             // Reset every second or so
             if (cycleCountSinceReset >= Math.min(clockSpeed.getClockRate(), MAX_RESET_CYCLES)) {
-                delayNanos = initialDelayNanos;
-                final long now = System.nanoTime();
-                updateSystemStatus(now - startTime);
-                startTime = now;
-                cycleCountSinceReset = 0L;
-                nextTickTime = startTime + delayNanos;
+                resetTime = resetDelay(resetTime, true);
             }
         }
     }
@@ -107,6 +122,17 @@ public final class Clock {
         final double cps = cycleCountSinceReset / secs;
         final double delta = cps / clockSpeed.getClockRate();
         delayNanos = Math.min(initialDelayNanos, Math.max(10L, (long) (delayNanos * delta)));
+    }
+
+    private long resetDelay(final long resetTime, final boolean updateStatus) {
+        delayNanos = initialDelayNanos;
+        final long now = System.nanoTime();
+        if (updateStatus) {
+            updateSystemStatus(now - resetTime);
+        }
+        cycleCountSinceReset = 0L;
+        nextTickTime = now + delayNanos;
+        return now;
     }
 
     private long awaitNextCycle() {

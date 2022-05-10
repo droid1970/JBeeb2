@@ -33,6 +33,9 @@ public final class Screen implements ClockListener {
 
     private static final boolean DOUBLE_BUFFERED = true;
 
+    private static final Color PAUSED_OVERLAY = new Color(255, 255, 255, 92);
+    private static final String PAUSED_TEXT = "PAUSED";
+
     private static final int IMAGE_BORDER_SIZE = 32;
     private static final int IMAGE_WIDTH = 640;
     private static final int IMAGE_HEIGHT = 512;
@@ -127,7 +130,6 @@ public final class Screen implements ClockListener {
     }
 
     public void newFrame() {
-        this.imageOrigin = null;
         if (videoULA.isTeletext()) {
             renderer = teletextRenderer;
         } else {
@@ -367,6 +369,7 @@ public final class Screen implements ClockListener {
     private final class ImageComponent extends JComponent {
 
         private Timer disableCursorTimer;
+        private final JLabel pausedLabel;
 
         public ImageComponent() {
             setOpaque(false);
@@ -399,6 +402,11 @@ public final class Screen implements ClockListener {
                     repaint();
                 }
             });
+            this.pausedLabel = new JLabel(PAUSED_TEXT);
+            this.pausedLabel.setOpaque(false);
+            this.pausedLabel.setForeground(new Color(255, 255, 255, 128));
+            this.pausedLabel.setHorizontalAlignment(JLabel.CENTER);
+            this.pausedLabel.setFont(pausedLabel.getFont().deriveFont(48.0f));
         }
 
         void enableCursor(final int enableTime) {
@@ -480,9 +488,10 @@ public final class Screen implements ClockListener {
                 final int offsetX = (imageOrigin == null) ? 0 : imageOrigin.x;
                 final int offsetY = (imageOrigin == null) ? 0 : imageOrigin.y;
                 g.drawImage(image, offsetX + imageRect.x, offsetY + imageRect.y, imageRect.width, imageRect.height, null);
-                if (!hasFocus()) {
-                    g.setColor(new Color(255, 255, 255, 128));
+                if (paused) {
+                    g.setColor(PAUSED_OVERLAY);
                     g.fillRect(0, 0, getWidth(), getHeight());
+                    SwingUtilities.paintComponent(g, pausedLabel, this, 0, 0, getWidth(), getHeight());
                 }
             }
 
