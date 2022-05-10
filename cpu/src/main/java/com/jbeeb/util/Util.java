@@ -288,7 +288,7 @@ public final class Util {
         getStateFields(fields, cl.getSuperclass());
     }
 
-    private static void populateTypeMap(final TypedProperties typedMap, final Object obj, final List<Field> fields) throws Exception {
+    private static void populateTypedProperties(final TypedProperties typedMap, final Object obj, final List<Field> fields) throws Exception {
         for (Field f : fields) {
             final var a = f.getAnnotation(StateKey.class);
             if (a != null) {
@@ -321,7 +321,7 @@ public final class Util {
             getStateFields(fields, cl);
             final var typedMap = new TypedProperties();
             if (!fields.isEmpty()) {
-                populateTypeMap(typedMap, obj, fields);
+                populateTypedProperties(typedMap, obj, fields);
             }
             state.put(key, typedMap);
         }

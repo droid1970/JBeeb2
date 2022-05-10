@@ -8,6 +8,7 @@ import com.jbeeb.memory.Memory;
 import com.jbeeb.util.Util;
 
 import java.awt.Color;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
@@ -55,6 +56,8 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
     private int scanLineCount;
 
     private long paintStart;
+    private int rasterWidth = -1;
+    private int rasterHeight = -1;
 
     public GraphicsModeScreenRenderer(Screen screen, Memory memory, SystemVIA systemVIA, Crtc6845 crtc6845, VideoULA videoULA) {
         super(memory, systemVIA, crtc6845, videoULA);
@@ -90,6 +93,9 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
         charPos = 0;
         scanLine = 0;
         cursorRect = null;
+
+        rasterWidth = -1;
+        rasterHeight = -1;
     }
 
     @Override
@@ -113,7 +119,7 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
                     try {
                         paintNextCharacter(image);
                     } catch (Exception ex) {
-                        ex.printStackTrace();
+                        // TODO: Avoid having to catch this
                         // Deliberately ignored
                     }
                 }
@@ -127,11 +133,9 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
         return scanLine >= scanLineCount;
     }
 
-    private int lastPixelsPerChar;
-
     private void paintNextCharacter(final BufferedImage img) {
 
-        // TODO: Only fetch these on a material change in Videa ULA
+        // TODO: Only fetch these after a material change in Videa ULA
         pixelsPerChar = videoULA.getPixelsPerCharacter();
         pixelsPerLine = horizontalDisplayedChars * pixelsPerChar;
         bitsPerPixel = videoULA.getBitsPerPixel();
@@ -164,6 +168,14 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
             px += pixelWidth;
         }
 
+        final int maxY = py + pixelHeight;
+        if (px > rasterWidth) {
+            rasterWidth = px;
+        }
+        if (maxY > rasterHeight) {
+            rasterHeight = maxY;
+        }
+
         if (cursorOn && cursorRect == null && address == cursorAddress) {
             final int cx = x;
             final int cy = computeCharY(scanLine & 0xf8, scanLinesPerChar, pixelHeight);
@@ -176,6 +188,8 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
             scanLine++;
         }
         if (scanLine >= scanLineCount) {
+            final int ox = Math.max(0, (imageWidth - rasterWidth) / 2);
+            final int oy = Math.max(0, (img.getHeight() - rasterHeight) / 2);
             if (cursorRect != null) {
                 final int cursorStart = crtc6845.getCursorStartLine();;
                 final int cursorHeight = (crtc6845.getCursorEndLine() - cursorStart) * pixelHeight;
@@ -190,7 +204,8 @@ public class GraphicsModeScreenRenderer extends AbstractScreenRenderer {
                 }
                 cursorRect = null;
             }
-            screen.imageReady(System.nanoTime() - paintStart);
+            final Point origin = new Point(ox, oy);
+            screen.imageReady(origin, System.nanoTime() - paintStart);
         }
     }
 

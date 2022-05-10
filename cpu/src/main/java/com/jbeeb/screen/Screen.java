@@ -90,6 +90,7 @@ public final class Screen implements ClockListener {
 
     private int imageIndex;
     private SystemPalette systemPalette = SystemPalette.DEFAULT;
+    private Point imageOrigin;
 
     private BufferedImage getImageToPaint() {
         return !DOUBLE_BUFFERED || (imageIndex & 1) == 0 ? image0 : image1;
@@ -106,10 +107,11 @@ public final class Screen implements ClockListener {
         }
     }
 
-    public void imageReady(final long timeNanos) {
+    public void imageReady(final Point origin, final long timeNanos) {
         swapImages();
         totalRefreshTimeNanos += timeNanos;
         imageComponent.repaint();
+        this.imageOrigin = origin;
     }
 
     private void swapImages() {
@@ -125,12 +127,12 @@ public final class Screen implements ClockListener {
     }
 
     public void newFrame() {
+        this.imageOrigin = null;
         if (videoULA.isTeletext()) {
             renderer = teletextRenderer;
         } else {
             renderer = graphicsRenderer;
         }
-
         if (renderer != null && renderer.isClockBased()) {
             final BufferedImage image = getImageToPaint();
             Util.fillRect(image.getWritableTile(0, 0).getDataBuffer(), systemPalette.getColour(0).getRGB(), 0, 0, image.getWidth(), image.getHeight(), image.getWidth());
@@ -472,10 +474,12 @@ public final class Screen implements ClockListener {
                     py = r.y;
                 }
                 ((Graphics2D) g).setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-                final Rectangle ir = new Rectangle(px + IMAGE_BORDER_SIZE, py + IMAGE_BORDER_SIZE, pw - IMAGE_BORDER_SIZE * 2, ph - IMAGE_BORDER_SIZE * 2);
+                final Rectangle imageRect = new Rectangle(px + IMAGE_BORDER_SIZE, py + IMAGE_BORDER_SIZE, pw - IMAGE_BORDER_SIZE * 2, ph - IMAGE_BORDER_SIZE * 2);
                 g.setColor(systemPalette.getColour(0));
-                g.fillRect(ir.x - IMAGE_BORDER_SIZE / 2, ir.y - IMAGE_BORDER_SIZE / 2, ir.width + IMAGE_BORDER_SIZE, ir.height + IMAGE_BORDER_SIZE);
-                g.drawImage(image, ir.x, ir.y, ir.width, ir.height, null);
+                g.fillRect(imageRect.x - IMAGE_BORDER_SIZE / 2, imageRect.y - IMAGE_BORDER_SIZE / 2, imageRect.width + IMAGE_BORDER_SIZE, imageRect.height + IMAGE_BORDER_SIZE);
+                final int offsetX = (imageOrigin == null) ? 0 : imageOrigin.x;
+                final int offsetY = (imageOrigin == null) ? 0 : imageOrigin.y;
+                g.drawImage(image, offsetX + imageRect.x, offsetY + imageRect.y, imageRect.width, imageRect.height, null);
                 if (!hasFocus()) {
                     g.setColor(new Color(255, 255, 255, 128));
                     g.fillRect(0, 0, getWidth(), getHeight());
@@ -502,6 +506,10 @@ public final class Screen implements ClockListener {
         @Override
         public void keyPressed(KeyEvent e) {
             final int code = e.getKeyCode();
+            if (e.getKeyCode() == KeyEvent.VK_F11) {
+                bbc.getCpu().requestReset(true);
+                return;
+            }
             if (!pressedKeys.contains(code)) {
                 pressedKeys.add(code);
                 if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_V) {

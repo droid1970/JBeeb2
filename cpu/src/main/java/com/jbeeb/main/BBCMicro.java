@@ -12,6 +12,7 @@ import com.jbeeb.localfs.FilingSystem;
 import com.jbeeb.localfs.LocalFilingSystem;
 import com.jbeeb.memory.*;
 import com.jbeeb.screen.Screen;
+import com.jbeeb.sound.SoundChip;
 import com.jbeeb.util.*;
 
 import java.io.File;
@@ -35,6 +36,7 @@ public final class BBCMicro implements InterruptSource {
 
     private final VideoULA videoULA;
     private final SystemVIA systemVIA;
+    private final SoundChip soundChip;
     private final UserVIA userVIA;
     private final Crtc6845 crtc6845;
     private final ADC adc;
@@ -72,8 +74,11 @@ public final class BBCMicro implements InterruptSource {
                 SHEILA + 0x20
         );
 
+        this.soundChip = SystemVIA.createSoundChip();
+
         this.systemVIA = new SystemVIA(
                 systemStatus,
+                soundChip,
                 "System VIA",
                 SHEILA + 0x40, 32
         );
@@ -248,22 +253,22 @@ public final class BBCMicro implements InterruptSource {
         final State state = new State();
         Util.populateState(state, videoULA);
         Util.populateState(state, systemVIA);
+        Util.populateState(state, soundChip);
         Util.populateState(state, userVIA);
         Util.populateState(state, crtc6845);
         Util.populateState(state, cpu);
         Util.populateState(state, ram);
-        // TODO: Soundchip?
         return state;
     }
 
     private void restoreState(final State state) throws Exception {
         Util.applyState(state, videoULA);
         Util.applyState(state, systemVIA);
+        Util.applyState(state, soundChip);
         Util.applyState(state, userVIA);
         Util.applyState(state, crtc6845);
         Util.applyState(state, cpu);
         Util.applyState(state, ram);
-        // TODO: Soundchip?
     }
 
     public void run(final BooleanSupplier haltCondition) {

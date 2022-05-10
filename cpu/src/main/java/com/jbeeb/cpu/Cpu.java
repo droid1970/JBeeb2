@@ -76,7 +76,7 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
     private int hi;
     private int elo;
     private int ehi;
-    private int interruptVector;
+    private int jumpVector;
 
     private boolean halted;
     private int haltCode;
@@ -127,6 +127,7 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
 
     public void reset() {
         this.pc = memory.readWord(CODE_START_VECTOR);
+        this.sp = 0xFF;
         this.flags = Flag.INTERRUPT.set(0);
         this.halted = false;
         this.haltCode = 0;
@@ -212,11 +213,11 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
 
     private void serviceBRK() {
         if (!servicingInterrupt) {
-            serviceInterrupt(true);
+            serviceInterrupt(true, false);
         }
     }
 
-    private void serviceInterrupt(final boolean isBRK) {
+    private void serviceInterrupt(final boolean isBRK, final boolean isReset) {
         servicingInterrupt = true;
         if (isBRK) {
             queue(this::readFromAndIncrementPC); // skip next byte
@@ -229,20 +230,28 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
             pushByte(Flag.RESERVED.set(Flag.BREAK.set(flags, isBRK)));
         });
         queue(() -> {
-            if (nmiRequested) {
-                interruptVector = NMI_JUMP_VECTOR;
+            if (isReset) {
+                jumpVector = CODE_START_VECTOR;
+                nmiRequested = false;
+                inNMI = false;
+                inIRQ = false;
+            } else if (nmiRequested) {
+                jumpVector = NMI_JUMP_VECTOR;
                 nmiRequested = false;
                 inNMI = true;
             } else {
-                interruptVector = IRQ_JUMP_VECTOR;
+                jumpVector = IRQ_JUMP_VECTOR;
                 inIRQ = (!isBRK);
             }
-            setPCL(readMemory(interruptVector));
+            setPCL(readMemory(jumpVector));
         });
         queue(() -> {
-            setPCH(readMemory(interruptVector + 1));
+            setPCH(readMemory(jumpVector + 1));
             servicingInterrupt = false;
             flags = Flag.INTERRUPT.set(flags);
+            if (isReset) {
+                reset();
+            }
         });
     }
 
@@ -252,9 +261,12 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
 
     private volatile boolean nmiRequested;
     public void requestNMI(final boolean b) {
-        if (nmiRequested != b) {
-            nmiRequested = b;
-        }
+        nmiRequested = b;
+    }
+
+    private volatile boolean resetRequested;
+    public void requestReset(final boolean b) {
+        this.resetRequested = b;
     }
 
     @Override
@@ -277,9 +289,15 @@ public final class Cpu implements Device, ClockListener, Runnable, Scheduler {
                     saveStateCallback = null;
                 }
 
+                // Check reset request
+                if (resetRequested) {
+                    serviceInterrupt(false, true);
+                    resetRequested = false;
+                    return;
+                }
                 // Check interrupt status
                 if (isNMI() || (Flag.INTERRUPT.isClear(flags) && isIRQ())) {
-                    serviceInterrupt(false);
+                    serviceInterrupt(false, false);
                     return;
                 }
             }

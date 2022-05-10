@@ -23,7 +23,7 @@ public class SystemVIA extends VIA {
     private final boolean[][] keyDown = new boolean[16][16];
     private final Boolean[][] keyDownShift = new Boolean[16][16];
     private ColRow lastKeyDown = null;
-    private final SoundChip soundChip = createSoundChip();
+    private final SoundChip soundChip;
 
     @StateKey(key = "IC32")
     private int IC32;
@@ -37,7 +37,7 @@ public class SystemVIA extends VIA {
     private Runnable capsLockChangedCallback;
     private Runnable shiftLockChangedCallback;
 
-    private static SoundChip createSoundChip() {
+    public static SoundChip createSoundChip() {
         try {
             return new MultiSoundChip();
         } catch (Exception ex) {
@@ -48,11 +48,13 @@ public class SystemVIA extends VIA {
 
     public SystemVIA(
             final SystemStatus systemStatus,
+            final SoundChip soundChip,
             final String name,
             final int startAddress,
             final int size
     ) {
         super(systemStatus, name, startAddress, size);
+        this.soundChip = Objects.requireNonNull(soundChip);
     }
 
     @Override

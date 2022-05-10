@@ -3,9 +3,16 @@ package com.jbeeb.sound;
 //
 // Partially based on  https://github.com/mattgodbolt/jsbeeb/blob/main/soundchip.js
 //
+
+import com.jbeeb.util.StateKey;
+
+@StateKey(key = "soundChip")
 public final class MultiSoundChip implements SoundChip {
 
+    @StateKey(key = "register")
     private final int[] register = new int[4];
+
+    @StateKey(key = "latchedRegister")
     private int latchedRegister;
 
     private final NoiseGenerator noiseGenerator = new NoiseGenerator();

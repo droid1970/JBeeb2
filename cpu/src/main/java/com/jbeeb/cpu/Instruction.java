@@ -3,6 +3,9 @@ package com.jbeeb.cpu;
 import com.jbeeb.util.Util;
 
 public enum Instruction {
+    //
+    // Official instructions
+    //
     ADC(InstructionType.READ) {
         @Override
         public void acceptValue(final Cpu cpu, final int value) {
@@ -327,7 +330,43 @@ public enum Instruction {
         public void acceptValue(Cpu cpu, int value) {
             cpu.trap(value);
         }
-    };
+    },
+
+    //
+    // Illegal/undocumented instructions
+    //
+    ALR(InstructionType.READ) {
+        @Override
+        public void acceptValue(Cpu cpu, int value) {
+            cpu.setA(cpu.getA() & value, true);
+            cpu.setA(Util.lsr(cpu, cpu.getA()), true);
+        }
+    },
+    ANC(InstructionType.READ) {
+        @Override
+        public void acceptValue(Cpu cpu, int value) {
+            cpu.setA(cpu.getA() & value, true);
+            cpu.setFlag(Flag.CARRY, cpu.isFlagSet(Flag.NEGATIVE));
+        }
+    },
+    LAX(InstructionType.READ) {
+        @Override
+        public void acceptValue(Cpu cpu, int value) {
+            cpu.setA(value, true);
+            cpu.setX(value, true);
+        }
+    },
+    RLA(InstructionType.READ_MODIFY_WRITE) {
+        @Override
+        public int transformValue(Cpu cpu, int value) {
+            final int ret = Util.rol(cpu, value, cpu.isFlagSet(Flag.CARRY));
+            cpu.setA(cpu.getA() & value, true);
+            return ret;
+        }
+    }
+    ;
+
+
 
     private final InstructionType type;
 

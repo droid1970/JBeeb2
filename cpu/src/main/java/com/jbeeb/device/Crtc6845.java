@@ -31,7 +31,7 @@ public class Crtc6845 extends AbstractMemoryMappedDevice implements InterruptSou
     private boolean cursorOn;
     private long inputCycleCount = 0L;
     private long myCycleCount = 0L;
-    private long lastEndOfFrame = 0l;
+    private long lastEndOfFrame = 0L;
     private long lastCursorBlink = 0L;
 
     private long firstFrameTime = -1L;
