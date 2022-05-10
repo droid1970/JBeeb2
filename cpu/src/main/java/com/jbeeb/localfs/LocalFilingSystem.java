@@ -3,7 +3,7 @@ package com.jbeeb.localfs;
 import com.jbeeb.cpu.Cpu;
 import com.jbeeb.cpu.CpuUtil;
 import com.jbeeb.cpu.Flag;
-import com.jbeeb.main.JavaBeeb;
+import com.jbeeb.main.BBCMicro;
 import com.jbeeb.memory.Memory;
 import com.jbeeb.util.Util;
 
@@ -50,10 +50,10 @@ public class LocalFilingSystem extends FilingSystem {
     public LocalFilingSystem(final String name, final String copyright) {
         super(name, copyright);
         try {
-            currentDirectory = LocalFileElement.of(new File(JavaBeeb.FILES, "images"));
+            currentDirectory = LocalFileElement.of(new File(BBCMicro.FILES, "images"));
         } catch (Exception ex) {
             ex.printStackTrace();
-            currentDirectory = LocalFileElement.of(JavaBeeb.FILES);
+            currentDirectory = LocalFileElement.of(BBCMicro.FILES);
         }
     }
 

@@ -22,6 +22,18 @@ import java.util.function.Consumer;
 
 public final class BBCMicro implements InterruptSource {
 
+    public static final File HOME = new File(System.getProperty("user.home"), "jbeeb");
+    public static final File ROMS = new File(HOME, "roms");
+    public static final File STATE = new File(HOME, "state");
+    public static final File FILES = new File(HOME, "files");
+
+    static {
+        HOME.mkdirs();
+        ROMS.mkdirs();
+        STATE.mkdirs();
+        FILES.mkdirs();
+    }
+
     private static final boolean INSTALL_DFS = false;
 
     private static final File STATE_FILE = new File(System.getProperty("user.home"), "state.bbc");
@@ -237,16 +249,6 @@ public final class BBCMicro implements InterruptSource {
                 }
             });
         }
-    }
-
-    public void requestState(final Consumer<State> resultConsumer) {
-        cpu.setQuiescentCallback(() -> {
-            try {
-                resultConsumer.accept(createState());
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        });
     }
 
     private State createState() throws Exception {
